@@ -51,15 +51,41 @@ There are two ways to install the PageFinder Configuration application on macOS:
 
 ## First-Time Launch Security Warning
 
-When launching the application for the first time, macOS may display a security warning because the application is not from the Mac App Store or an identified developer.
+When launching the application for the first time, macOS will display a security warning because the application is not signed with an Apple Developer ID certificate or notarized by Apple.
 
-To open the application:
+### Method 1: Using the ZIP Version (Recommended)
 
-1. Right-click (or Control-click) on the application icon
-2. Select "Open" from the context menu
-3. Click "Open" in the dialog that appears
+The ZIP version is easier to use with macOS security features:
 
-You only need to do this once. After that, you can open the application normally by double-clicking its icon.
+1. Download the ZIP file for your processor (Intel or Apple Silicon)
+2. Extract the ZIP file
+3. Move the "PageFinder Configuration.app" to your Applications folder
+4. Right-click (or Control-click) on the application icon
+5. Select "Open" from the context menu
+6. Click "Open" in the dialog that appears
+
+### Method 2: Using the DMG Version
+
+If you prefer using the DMG version:
+
+1. Download the DMG file for your processor
+2. Double-click to mount the DMG
+3. Drag the application to the Applications folder
+4. In Finder, navigate to your Applications folder
+5. Right-click (or Control-click) on "PageFinder Configuration"
+6. Select "Open" from the context menu
+7. Click "Open" in the dialog that appears
+
+### Additional Security Bypass (If Needed)
+
+If you still can't open the application:
+
+1. Open System Preferences
+2. Go to Security & Privacy
+3. In the General tab, you may see a message about "PageFinder Configuration" being blocked
+4. Click "Open Anyway" to allow the application to run
+
+You only need to bypass these security warnings once. After that, you can open the application normally by double-clicking its icon.
 
 ## Uninstallation
 

@@ -9,6 +9,7 @@
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "dist:mac": "electron-builder --mac",
+    "dist:mac:signed": "electron-builder --mac && ./scripts/sign-mac-app.sh",
     "dist:win": "electron-builder --win",
     "dist:linux": "electron-builder --linux",
     "dist:all": "electron-builder -mwl"
