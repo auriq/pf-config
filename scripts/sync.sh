@@ -2,7 +2,7 @@
 
 # Sync script for PageFinder
 # This script is generated automatically by the PageFinder Configuration tool
-# Generated on: 2025-03-27T01:55:14.299Z
+# Generated on: 2025-03-26T23:06:34.000Z
 
 # Set UTF-8 locale to handle double-byte characters correctly
 export LC_ALL=en_US.UTF-8
@@ -39,30 +39,13 @@ if [ ! -f "${RCLONE_PATH}" ]; then
 fi
 
 # Run sync commands
-log "Syncing g1 to PageFinder..."
-"/usr/local/bin/rclone" sync "g1:" "pf-user-2:asi-essentia-ai-new/user/pf-user-2/g1" -P --config "/Users/koi/.config/pf-config/rclone.conf" >> "${LOG_FILE}" 2>&1
+# Example sync command (will be replaced by actual commands)
+log "Syncing example-remote to PageFinder..."
+"${RCLONE_PATH}" sync "example-remote:" "pf-remote:asi-essentia-ai-new/user/pf-remote/example-remote" -P --config "${CONFIG_PATH}" >> "${LOG_FILE}" 2>&1
 if [ $? -eq 0 ]; then
-    log "Sync for g1 completed successfully"
+    log "Sync for example-remote completed successfully"
 else
-    log "ERROR: Sync for g1 failed"
+    log "ERROR: Sync for example-remote failed"
 fi
-
-log "Syncing box to PageFinder..."
-"/usr/local/bin/rclone" sync "box:Poc_e250214" "pf-user-2:asi-essentia-ai-new/user/pf-user-2/box" -P --config "/Users/koi/.config/pf-config/rclone.conf" >> "${LOG_FILE}" 2>&1
-if [ $? -eq 0 ]; then
-    log "Sync for box completed successfully"
-else
-    log "ERROR: Sync for box failed"
-fi
-
-log "Syncing koi to PageFinder..."
-"/usr/local/bin/rclone" sync "koi:/Users/koi/Desktop/sample/testdoc/jp/invoice" "pf-user-2:asi-essentia-ai-new/user/pf-user-2/koi" -P --config "/Users/koi/.config/pf-config/rclone.conf" >> "${LOG_FILE}" 2>&1
-if [ $? -eq 0 ]; then
-    log "Sync for koi completed successfully"
-else
-    log "ERROR: Sync for koi failed"
-fi
-
-
 
 log "===== PageFinder Sync Job Completed at $(date) ====="
