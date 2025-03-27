@@ -1,0 +1,155 @@
+===== PageFinder Sync Job Started at Wed Mar 26 18:20:00 PDT 2025 =====
+Using config file: /Users/koi/.config/pf-config/rclone.conf
+Encoding: UTF-8
+
+[2025-03-26 18:20:00] Syncing g1 to PageFinder...
+Transferred:   	          0 B / 0 B, -, 0 B/s, ETA -
+Checks:                 0 / 1, 0%
+Elapsed time:         0.5s
+Checking:
+ *                                   カオスの応用例.pdf: checkingTransferred:   	          0 B / 0 B, -, 0 B/s, ETA -
+Checks:                 3 / 3, 100%
+Elapsed time:         1.0sTransferred:   	          0 B / 0 B, -, 0 B/s, ETA -
+Checks:                 5 / 6, 83%
+Elapsed time:         1.4s
+Checking:
+ * ForDemo/sample_miura/オ…株式会社オフィステック/法人リスト.Transferred:   	          0 B / 0 B, -, 0 B/s, ETA -
+Checks:                37 / 416, 9%
+Elapsed time:         2.0s
+Checking:
+ * ForDemo/Kitagawa/41DaX…8kL._AC._SR180,230.jpg: checking
+ * ForDemo/Kitagawa/41F5d…66L._AC._SR180,230.jpg: checking
+ * ForDemo/Kitagawa/41FeK…IFL._AC._SR180,230.jpg: checking
+ * ForDemo/Kitagawa/41IcJ…hgL._AC._SR180,230.jpg: checking
+ * ForDemo/Kitagawa/41PRt…FKL._AC._SR180,230.jpg: checking
+ * ForDemo/Kitagawa/41c8E…VdL._AC._SR180,230.jpg: checking
+ * ForDemo/Kitagawa/41iS1…C6L._AC._SR180,230.jpg: checking
+ * ForDemo/Kitagawa/41oEi…+KL._AC._SR180,230.jpg: checkingTransferred:   	          0 B / 0 B, -, 0 B/s, ETA -
+Checks:                84 / 563, 15%
+Elapsed time:         2.4s
+Checking:
+ * ForDemo/Kitagawa/51mk4…c3L._AC._SR180,230.jpg: checking
+ * ForDemo/Kitagawa/51n28…OFL._AC._SR180,230.jpg: checking
+ * ForDemo/Kitagawa/51nv8…oGL._AC._SR180,230.jpg: checking
+ * ForDemo/Kitagawa/51pMu…IPL._AC._SR180,230.jpg: checking
+ * ForDemo/Kitagawa/51pmY…MwL._AC._SR180,230.jpg: checking
+ * ForDemo/Kitagawa/51r5-…XyL._AC._SR180,230.jpg: checking
+ * ForDemo/Kitagawa/51vIX…ZaL._AC._SR180,230.jpg: checkingTransferred:   	          0 B / 0 B, -, 0 B/s, ETA -
+Checks:               126 / 563, 22%
+Elapsed time:         3.0s
+Checking:
+ *  ForDemo/Kitagawa/65cc61a297a0c2.29691223.png: checking
+ *  ForDemo/Kitagawa/65cc61e6a4e0e9.62671723.png: checking
+ *  ForDemo/Kitagawa/65ced5b27180c7.45727940.png: checking
+ * ForDemo/Kitagawa/6990f…06a865e819a3b118b9.png: checking
+ * ForDemo/Kitagawa/71+OG…xL._AC_UL960_QL65_.jpg: checking
+ * ForDemo/Kitagawa/71-Qa…1L._AC_SX360_QL70_.jpg: checking
+ * ForDemo/Kitagawa/711sY…QsL._AC._SR360,460.jpg: checking
+ * ForDemo/Kitagawa/712gb…xkL._AC._SR360,460.jpg: checkingTransferred:   	          0 B / 0 B, -, 0 B/s, ETA -
+Checks:               174 / 563, 31%
+Elapsed time:         3.5s
+Checking:
+ * ForDemo/Kitagawa/81Bdq…L._AC_UY654_QL65_.jpeg: checking
+ *  ForDemo/Kitagawa/81DgTXECisL._AC_UY218_.jpeg: checking
+ * ForDemo/Kitagawa/81EYF…AiL._AC._SR360,460.jpg: checking
+ *  ForDemo/Kitagawa/81FJslePjZL._AC_UY218_.jpeg: checking
+ * ForDemo/Kitagawa/81G6E…VQL._AC._SR360,460.jpg: checking
+ * ForDemo/Kitagawa/81IJ2…3L._AC_UL800_QL65_.jpg: checking
+ * ForDemo/Kitagawa/81Ir0…vPL._AC._SR360,460.jpg: checking
+ * ForDemo/Kitagawa/81JQj…ZL._AC_UL800_QL65_.jpg: checkingTransferred:   	          0 B / 0 B, -, 0 B/s, ETA -
+Checks:               222 / 563, 39%
+Elapsed time:         3.9s
+Checking:
+ * ForDemo/Kitagawa/81ts1…xsL._AC._SR360,460.jpg: checking
+ * ForDemo/Kitagawa/81uAU…HL._AC_UL960_QL65_.jpg: checking
+ * ForDemo/Kitagawa/81v0Z…cL._AC_SX360_QL70_.jpg: checking
+ * ForDemo/Kitagawa/81vG1…L._AC_UY654_QL65_.jpeg: checking
+ * ForDemo/Kitagawa/81yDD…KKL._AC._SR360,460.jpg: checking
+ *  ForDemo/Kitagawa/81yZ25cn3RL._AC_UY218_.jpeg: checking
+ * ForDemo/Kitagawa/81zRV…CYL._AC._SR360,460.jpg: checking
+ * ForDemo/Kitagawa/81zcy…hQL._AC._SR360,460.jpg: checkingTransferred:   	          0 B / 0 B, -, 0 B/s, ETA -
+Checks:               266 / 563, 47%
+Elapsed time:         4.4s
+Checking:
+ * ForDemo/Kitagawa/OIP.D…hGM-nPEqihAJQHaFN.jpeg: checking
+ * ForDemo/Kitagawa/OIP.E…qZisgVWRwH7jQHaJH.jpeg: checking
+ * ForDemo/Kitagawa/OIP.E…WoO7pdb9tjXXgHaKe.jpeg: checking
+ * ForDemo/Kitagawa/OIP.K…oXhsLrSklWWAQHaFj.jpeg: checking
+ * ForDemo/Kitagawa/OIP.P…XjJYO2zCuVJUgHaH2.jpeg: checking
+ * ForDemo/Kitagawa/OIP.P…OUuCUeiZqQg8QHaE2.jpeg: checking
+ * ForDemo/Kitagawa/OIP.P…yUOWisMvpU7sQHaHR.jpeg: checking
+ * ForDemo/Kitagawa/OIP.P…FhpLLCGPiDowwHaFy.jpeg: checkingTransferred:   	          0 B / 0 B, -, 0 B/s, ETA -
+Checks:               309 / 563, 55%
+Elapsed time:         4.9s
+Checking:
+ * ForDemo/Kitagawa/OIP.p…8cyLQcpe8nBuQHaHa.jpeg: checking
+ * ForDemo/Kitagawa/OIP.r…Zn3u15WdRU2KQHaHM.jpeg: checking
+ * ForDemo/Kitagawa/OIP.t…jdnDfMtMuEJHQHaFP.jpeg: checking
+ * ForDemo/Kitagawa/OIP.t…KSERKUNkyzlHAHaEz.jpeg: checking
+ * ForDemo/Kitagawa/OIP.v…jfuzF4FUrGerQHaKe.jpeg: checking
+ * ForDemo/Kitagawa/OIP.v…ylVBh_lgMs4oAAAAA.jpeg: checking
+ * ForDemo/Kitagawa/OIP.w…sYkZwN-jz6EEgHaKe.jpeg: checking
+ * ForDemo/Kitagawa/OIP.y…Ed81DDb7nCcXQHaJL.jpeg: checkingTransferred:   	          0 B / 0 B, -, 0 B/s, ETA -
+Checks:               356 / 563, 63%
+Elapsed time:         5.4s
+Checking:
+ *            ForDemo/Kitagawa/hiraya_l_1ldk.jpg: checking
+ *            ForDemo/Kitagawa/hiraya_l_3ldk.jpg: checking
+ *            ForDemo/Kitagawa/hiraya_l_4ldk.jpg: checking
+ *   ForDemo/Kitagawa/hiraya_ro_1ldk-768x813.jpg: checking
+ *  ForDemo/Kitagawa/hiraya_ro_4ldk-1024x801.jpg: checking
+ *           ForDemo/Kitagawa/hiraya_ro_4ldk.jpg: checking
+ *                   ForDemo/Kitagawa/image1.jpg: checking
+ *                 ForDemo/Kitagawa/images-1.jpg: checkingTransferred:   	          0 B / 0 B, -, 0 B/s, ETA -
+Checks:               402 / 563, 71%
+Elapsed time:         5.9s
+Checking:
+ * ForDemo/sample_miura/オ…新/3tvb24bha6isqad.pptx: checking
+ * ForDemo/sample_miura/オ…テック/営業部/営業資料最新/DX.pptx: ch
+ * ForDemo/sample_miura/オ…新/g3h3xj7ibmr5ev4.pptx: checking
+ * ForDemo/sample_miura/オ…新/j27kj7cowlws2wt.pptx: checking
+ * ForDemo/sample_miura/オ…新/n0vdh2aal94fodt.pptx: checking
+ * ForDemo/sample_miura/オ…新/o9gtf9y3nfte4am.pptx: checking
+ * ForDemo/sample_miura/オ…新/yq3mlnfrlb4wmja.pptx: checking
+ * ForDemo/sample_miura/オ…テック/営業部/営業管理/仕入れ先.xlsxTransferred:   	          0 B / 0 B, -, 0 B/s, ETA -
+Checks:               447 / 563, 79%
+Elapsed time:         6.5s
+Checking:
+ * ForDemo/sample_miura/オ…各社カタログ/CS-39N096T.pdf: checking
+ * ForDemo/sample_miura/オ…タログ/DD5450_DD5440.pdf: checking
+ * ForDemo/sample_miura/オ…650-5550-5451-5441.pdf: checking
+ * ForDemo/sample_miura/オ…各社カタログ/EL-40N085T.pdf: checking
+ * ForDemo/sample_miura/オ…GBC-OPcatalog-2023.pdf: checking
+ * ForDemo/sample_miura/オ…業部/各社カタログ/IM-430F.pdf: checking
+ * ForDemo/sample_miura/オ…カタログ/IM-460F-370F.pdf: checking
+ * ForDemo/sample_miura/オ…000-4000-3500-2500.pdf: checkingTransferred:   	          0 B / 0 B, -, 0 B/s, ETA -
+Checks:               495 / 563, 88%
+Elapsed time:         7.0s
+Checking:
+ * ForDemo/sample_miura/オ…タログ/all_pageのコピー.pdf: checking
+ * ForDemo/sample_miura/オ…業部/各社カタログ/bib2501.pdf: checking
+ * ForDemo/sample_miura/オ…カタログ/catalog_24aw.pdf: checking
+ * ForDemo/sample_miura/オ…/catalogue_Place25.pdf: checking
+ * ForDemo/sample_miura/オ…ログ/catalogue_Sogo.pdf: checking
+ * ForDemo/sample_miura/オ…社カタログ/celsius2501.pdf: checking
+ * ForDemo/sample_miura/オ…-ocr-for-nouhinsho.pdf: checking
+ * ForDemo/sample_miura/オ…ocr-for-seikyuusho.pdf: checkingTransferred:   	          0 B / 0 B, -, 0 B/s, ETA -
+Checks:               539 / 563, 96%
+Elapsed time:         7.5s
+Checking:
+ * ForDemo/sample_miura/オ…社カタログ/jpt07211_45.pdf: checking
+ * ForDemo/sample_miura/オ…社カタログ/jpt13613_07.pdf: checking
+ * ForDemo/sample_miura/オ…社カタログ/jpt13614_06.pdf: checking
+ * ForDemo/sample_miura/オ…社カタログ/jpt13615_15.pdf: checking
+ * ForDemo/sample_miura/オ…部/各社カタログ/kankatsu.pdf: checking
+ * ForDemo/sample_miura/オ…an-barcode-katsuyo.pdf: checking
+ * ForDemo/sample_miura/オ…re-print-for-cloud.pdf: checking
+ * ForDemo/sample_miura/オ…isyobako_print_ae2.pdf: checkingTransferred:   	          0 B / 0 B, -, 0 B/s, ETA -
+Checks:               567 / 567, 100%
+Deleted:                4 (files), 0 (dirs), 142.799 KiB (freed)
+Elapsed time:         7.8s
+[2025-03-26 18:20:09] Sync for g1 completed successfully
+[2025-03-26 18:20:09] Syncing box to PageFinder...
+2025/03/26 18:20:11 CRITICAL: Failed to create file system for "box:Poc_e250214": pre-upload check: Options "https://api.box.com/2.0/files/content/": couldn't fetch token: invalid_grant: maybe token expired? - try refreshing with "rclone config reconnect box:"
+[2025-03-26 18:20:11] ERROR: Sync for box failed
+[2025-03-26 18:20:11] ===== PageFinder Sync Job Completed at Wed Mar 26 18:20:11 PDT 2025 =====

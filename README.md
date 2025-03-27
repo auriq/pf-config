@@ -1,100 +1,136 @@
-# Cloud Storage Configuration
+# PageFinder Configuration
 
-A desktop application for managing cloud storage configurations using rclone.
-
-## Overview
-
-This application provides a user-friendly interface for managing cloud storage connections using [rclone](https://rclone.org), making it easy to connect to popular cloud storage providers:
-
-- Google Drive
-- Microsoft OneDrive
-- Dropbox
-- Box
-- Local Storage
-
-The app simplifies the process of setting up, managing, and testing cloud storage connections without having to use the command line.
-
-## Prerequisites
-
-Before using this application, you need to have rclone installed on your system:
-
-- **macOS/Linux**: `/usr/local/bin/rclone` (default path)
-- **Windows**: Install using the rclone installer from [rclone.org](https://rclone.org/install/)
+A desktop application for configuring cloud storage connections with PageFinder.
 
 ## Installation
 
-### From Source
+For detailed installation instructions, please refer to the installation guides:
 
-1. Clone this repository
-2. Install dependencies: `npm install`
-3. Start the application: `npm start`
+- [General Installation Guide](docs/installation-guide.md)
+- [macOS Installation Guide](docs/installation-guide-macos.md)
+- [Windows Installation Guide](docs/installation-guide-windows.md)
+- [Linux Installation Guide](docs/installation-guide-linux.md)
 
-### Prebuilt Binaries
+## Releases
 
-Download the appropriate installer for your operating system from the releases page:
+For information on creating and publishing releases:
 
-- **macOS**: `Cloud-Storage-Config-App-{version}-mac-{arch}-installer.dmg`
-- **Windows**: `Cloud-Storage-Config-App-{version}-win-x64-setup.exe`
-- **Linux**: `Cloud-Storage-Config-App-{version}-linux-x64.AppImage`
+- [GitHub Release Guide](docs/github-release-guide.md)
 
 ## Features
 
-- **Easy Configuration**: Connect to cloud storage providers through a simple UI
-- **OAuth Authentication**: Simplified OAuth flow for supported providers
-- **Remote Management**: List, check, and delete remote connections
-- **File Browsing**: View files and file sizes in your cloud storage
-- **Cross-Platform**: Works on Windows, macOS, and Linux
+- Configure cloud storage providers (Google Drive, OneDrive, Box, Dropbox, Local Storage)
+- Set up PageFinder configuration
+- Test connections between cloud storage and PageFinder
+- Schedule automatic synchronization
 
-## Usage
+## Development
 
-### First Launch
+### Prerequisites
 
-Upon first launch, you'll be prompted to set up the path to your rclone executable:
+- Node.js (v14 or later)
+- npm (v6 or later)
+- ImageMagick (for icon generation)
 
-1. Enter the path where rclone is installed on your system
-2. Alternatively, click "Use Default Path" if rclone is installed in the standard location
+### Setup
 
-### Adding a New Remote
+1. Clone the repository
+2. Install dependencies:
 
-1. Click on the button for the cloud provider you want to connect to
-2. Enter a name for this remote connection
-3. Follow the authentication flow that opens in your browser
-4. The remote will be added to your list of connections
+```bash
+npm install
+```
 
-### Managing Remotes
+3. Start the application in development mode:
 
-- **View Remotes**: All configured remotes are displayed in the main screen
-- **Check Remote**: Click on a remote and then the check icon to verify the connection and see file information
-- **Delete Remote**: Click on a remote and then the delete icon to remove the configuration
+```bash
+npm start
+```
 
-## Troubleshooting
+## Building Installation Packages
 
-### Common Issues
+### Generate Application Icons
 
-1. **"Rclone path not configured"**: 
-   - Ensure rclone is installed and the correct path is set in the application
+1. Create a placeholder icon (or replace with your own 1024x1024 PNG at `build/icon.png`):
 
-2. **Authentication Failed**:
-   - Check your internet connection
-   - Ensure your browser is not blocking popups
-   - Try adding the remote again
+```bash
+./scripts/create-placeholder-icon.sh
+```
 
-3. **Application Hangs**:
-   - If the application becomes unresponsive during configuration, use the included cleanup script:
-     - Windows: Run `scripts/kill-app.bat`
-     - macOS/Linux: Run `scripts/kill-app.sh`
+2. Generate icons for different platforms:
 
-## Configuration Files
+```bash
+./scripts/generate-icons.sh
+```
 
-The application stores its configuration in:
+### Build for Current Platform
 
-- **macOS/Linux**: `~/.config/pf-config/`
-- **Windows**: `%USERPROFILE%\.config\pf-config\`
+To build the application for your current platform:
 
-The directory contains:
-- `rclone.conf`: The rclone configuration file
-- `settings.json`: Application settings
+```bash
+npm run dist
+```
+
+The output will be in the `dist` directory.
+
+### Build for Specific Platforms
+
+#### macOS
+
+```bash
+npm run dist:mac
+```
+
+This will generate:
+- `.dmg` installer (for both Intel and Apple Silicon)
+- `.zip` archive (for both Intel and Apple Silicon)
+
+#### Windows
+
+```bash
+npm run dist:win
+```
+
+This will generate:
+- `.exe` installer (NSIS)
+- Portable `.exe` (no installation required)
+
+#### Linux
+
+```bash
+npm run dist:linux
+```
+
+This will generate:
+- `.AppImage` (portable Linux application)
+- `.deb` package (for Debian-based distributions)
+
+### Build for All Platforms
+
+To build for all platforms (requires appropriate build environments):
+
+```bash
+npm run dist:all
+```
+
+## Cross-Platform Building
+
+Building for platforms other than your current one may require additional setup:
+
+### Building for Windows on macOS/Linux
+
+Requires Wine and mono:
+- macOS: `brew install --cask wine-stable` and `brew install mono`
+- Linux: Install Wine and mono using your package manager
+
+### Building for macOS on Windows/Linux
+
+Not possible without a macOS machine due to Apple's restrictions.
+
+### Building for Linux on macOS/Windows
+
+No additional requirements.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT

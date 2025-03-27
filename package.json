@@ -1,13 +1,17 @@
 {
   "name": "pf-config",
   "version": "1.0.0",
-  "description": "Application for managing cloud storage configuration",
+  "description": "Application for configuring cloud storage connections with PageFinder",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
     "test": "echo \"Error: no test specified\" && exit 1",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux",
+    "dist:all": "electron-builder -mwl"
   },
   "keywords": [
     "rclone",
@@ -25,8 +29,8 @@
     "electron": "^28.2.0"
   },
   "build": {
-    "appId": "com.pf.config",
-    "productName": "Cloud Storage Config App",
+    "appId": "com.pagefinder.config",
+    "productName": "PageFinder Configuration",
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "mac": {
       "category": "public.app-category.utilities",
