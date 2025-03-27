@@ -78,6 +78,37 @@ If you prefer using the DMG version:
 
 ### Additional Security Bypass (If Needed)
 
+If you see the error "PageFinder Configuration is damaged and can't be opened. You should move it to the Trash":
+
+**Method 1: Using the Helper Script (Recommended)**
+
+1. Download the [fix-mac-quarantine.sh](https://github.com/auriq/pf-config/raw/main/scripts/fix-mac-quarantine.sh) script
+2. Open Terminal (Applications > Utilities > Terminal)
+3. Navigate to where you downloaded the script:
+   ```bash
+   cd ~/Downloads
+   ```
+4. Make the script executable:
+   ```bash
+   chmod +x fix-mac-quarantine.sh
+   ```
+5. Run the script:
+   ```bash
+   ./fix-mac-quarantine.sh
+   ```
+6. The script will automatically find and fix the application
+7. Try opening the application again
+
+**Method 2: Manual Command**
+
+1. Open Terminal (Applications > Utilities > Terminal)
+2. Run the following command to remove the quarantine attribute:
+   ```bash
+   xattr -d com.apple.quarantine /Applications/PageFinder\ Configuration.app
+   ```
+   (Adjust the path if you installed the app elsewhere)
+3. Try opening the application again
+
 If you still can't open the application:
 
 1. Open System Preferences

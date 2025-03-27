@@ -4,25 +4,39 @@ This document explains the options for handling macOS code signing for the PageF
 
 ## Background
 
-macOS has a security feature called Gatekeeper that prevents users from running applications that aren't:
-1. From the Mac App Store
-2. Signed with an Apple Developer ID certificate
-3. Notarized by Apple
+macOS has security features that prevent users from running applications that aren't verified:
 
-When users try to open an unsigned application, they'll see a warning message saying the app "cannot be opened because it is from an unidentified developer" or that "macOS cannot verify that this app is free from malware."
+1. **Gatekeeper**: Blocks applications that aren't:
+   - From the Mac App Store
+   - Signed with an Apple Developer ID certificate
+   - Notarized by Apple
+
+2. **Quarantine Attribute**: macOS adds a quarantine attribute to files downloaded from the internet, which triggers additional security checks.
+
+When users try to open an unsigned application, they might see:
+- A warning message saying the app "cannot be opened because it is from an unidentified developer"
+- An error message saying the app "is damaged and can't be opened. You should move it to the Trash."
 
 ## Options for Handling Code Signing
 
-### Option 1: Use the ZIP Version (Simplest for Users)
+### Option 1: Use the ZIP Version and Remove Quarantine Attribute (Simplest for Users)
 
 The ZIP version of the application can be easier for users to work with:
 
 1. Users download the ZIP file
 2. Extract it
 3. Move the app to Applications folder
-4. Right-click on the app and select "Open" (this bypasses the initial security warning)
+4. Remove the quarantine attribute using one of these methods:
+   - Run our helper script: `scripts/fix-mac-quarantine.sh`
+   - Use Terminal: `xattr -d com.apple.quarantine /Applications/PageFinder\ Configuration.app`
+5. Open the application normally
 
-This approach requires no code signing but still requires users to take an extra step the first time they run the application.
+This approach requires no code signing but does require users to take an extra step to remove the quarantine attribute.
+
+We've included a helper script (`scripts/fix-mac-quarantine.sh`) that automates the process of removing the quarantine attribute. This script:
+- Automatically finds the application
+- Removes the quarantine attribute
+- Provides troubleshooting guidance if needed
 
 ### Option 2: Self-Signing (Included in this Repository)
 
