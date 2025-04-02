@@ -304,6 +304,27 @@
             min-height: 1.5rem;
         }
         
+        .option-row {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
+        
+        .checkbox-label {
+            font-size: 0.9rem;
+            color: #333;
+        }
+        
         .connection-result {
             margin-top: 2rem;
             border: 1px solid var(--border-color);
@@ -321,12 +342,16 @@
         
         .connection-details {
             padding: 1rem;
-            max-height: 300px;
+            max-height: 600px;
             overflow-y: auto;
-            font-family: monospace;
+            font-family: 'Courier New', monospace;
             font-size: 0.9rem;
-            white-space: pre-wrap;
-            background-color: #f8f9fa;
+            white-space: pre;
+            background-color: #000;
+            line-height: 1.2;
+            color: #f0f0f0;
+            border: 1px solid #444;
+            border-radius: 4px;
         }
 
         /* Remote List Styles */
@@ -901,6 +926,12 @@
                                 <p>Click "Check Connection" to verify access to the storage bucket.</p>
                             </div>
                         </div>
+                        <div class="option-row">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="use-ls-command-pf">
+                                <span class="checkbox-label">List all files (slower but more detailed)</span>
+                            </label>
+                        </div>
                         <button id="check-pf-connection" class="action-button">
                             <span>Check Connection</span>
                             <span id="connection-status-icon" class="status-icon"></span>
@@ -945,7 +976,9 @@
                 
                 <!-- Test Results Area -->
                 <div class="connection-result">
-                    <h5>Test Results</h5>
+                    <h5 style="background-color: #2c3e50; color: white; padding: 10px; margin: 0; border-radius: 4px 4px 0 0;">
+                        Test Results - Sync Command Output
+                    </h5>
                     <div id="test-connection-details" class="connection-details">No test has been run yet.</div>
                 </div>
             </div>

@@ -133,6 +133,7 @@ class ConfigUIController {
     this.pfConnectionStatusElement = document.getElementById("pf-connection-status");
     this.pfConnectionStatusIcon = document.getElementById("connection-status-icon");
     this.pfConnectionDetailsElement = document.getElementById("pf-connection-details");
+    this.useLsCommandPfCheckbox = document.getElementById("use-ls-command-pf");
     
     // Test connection elements
     this.runTestConnectionButton = document.getElementById("run-test-connection");
@@ -762,14 +763,16 @@ class ConfigUIController {
           detailsOutput += `Test ${index + 1}: ${testResult.remote}\n`;
           detailsOutput += `Command: ${testResult.command}\n`;
           detailsOutput += `Status: ${testResult.success ? 'Success ✓' : 'Failed ✗'}\n`;
-          detailsOutput += `Output:\n${testResult.output || 'No output'}\n\n`;
+          // Display the raw output exactly as it appears in the terminal
+          // No formatting, no modifications, just the raw output
+          detailsOutput = testResult.output || 'No output';
           detailsOutput += "----------------------------------------\n\n";
         });
       } else {
         detailsOutput += "No test results available.";
       }
       
-      this.testConnectionDetailsElement.textContent = detailsOutput;
+      this.testConnectionDetailsElement.innerHTML = detailsOutput;
     } catch (error) {
       console.error('Error testing connections:', error);
       this.testConnectionStatusElement.textContent = `Error: ${error.message}`;
@@ -781,7 +784,7 @@ class ConfigUIController {
       this.testStatusIcon.innerHTML = "✗";
       this.testStatusIcon.className = "status-icon error";
       
-      this.testConnectionDetailsElement.textContent = "Test failed with error: " + error.message;
+      this.testConnectionDetailsElement.innerHTML = "Test failed with error: " + error.message;
     }
   }
   
@@ -857,8 +860,10 @@ class ConfigUIController {
       this.checkPFConnectionButton.disabled = true;
       this.pfConnectionDetailsElement.textContent = "Extracting parameters from config file and testing connection...";
       
-      // No parameters needed - they'll be extracted from the config file
-      const result = await ipcRenderer.invoke('check-pf-connection', {});
+      // Pass the checkbox value to the main process
+      const result = await ipcRenderer.invoke('check-pf-connection', {
+        useLsCommand: this.useLsCommandPfCheckbox && this.useLsCommandPfCheckbox.checked
+      });
       
       this.checkPFConnectionButton.disabled = false;
       
