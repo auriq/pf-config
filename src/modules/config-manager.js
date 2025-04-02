@@ -61,7 +61,7 @@ class ConfigManager {
       const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
       return metadata.remotes[remoteName] || null;
     } catch (error) {
-      console.error('Error getting remote metadata:', error);
+      console.error('Error getting remote metadata [Error details hidden]');
       return null;
     }
   }
@@ -77,7 +77,7 @@ class ConfigManager {
       const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
       return metadata.remotes || {};
     } catch (error) {
-      console.error('Error getting all remotes metadata:', error);
+      console.error('Error getting all remotes metadata [Error details hidden]');
       return {};
     }
   }
@@ -96,7 +96,7 @@ class ConfigManager {
       fs.writeFileSync(metadataPath, JSON.stringify(allMetadata, null, 2));
       return true;
     } catch (error) {
-      console.error('Error saving remote metadata:', error);
+      console.error('Error saving remote metadata [Error details hidden]');
       return false;
     }
   }
@@ -118,7 +118,7 @@ class ConfigManager {
       
       return true;
     } catch (error) {
-      console.error('Error deleting remote metadata:', error);
+      console.error('Error deleting remote metadata [Error details hidden]');
       return false;
     }
   }
@@ -159,14 +159,19 @@ class ConfigManager {
         // Split by = and trim whitespace
         const [key, value] = line.split('=').map(part => part.trim());
         if (key && value) {
-          config[key] = value;
+          // Don't include sensitive information like tokens
+          if (key === 'token') {
+            config[key] = '[TOKEN HIDDEN]';
+          } else {
+            config[key] = value;
+          }
         }
       });
-      
-      console.log(`Config for ${remoteName}:`, config);
+      // Don't log config to avoid printing sensitive tokens
+      console.log(`Config for ${remoteName}: [Config details hidden]`);
       return config;
     } catch (error) {
-      console.error(`Error getting remote config for ${remoteName}:`, error);
+      console.error(`Error getting remote config for ${remoteName} [Error details hidden]`);
       return null;
     }
   }
@@ -235,7 +240,7 @@ class ConfigManager {
 
       return output.trim().split('\n').map(remote => remote.replace(':', ''));
     } catch (error) {
-      console.error('Error listing remotes:', error);
+      console.error('Error listing remotes [Error details hidden]');
       return [];
     }
   }
@@ -266,7 +271,7 @@ class ConfigManager {
         return;
       }
 
-      console.log(`Executing rclone command: ${command}`);
+      console.log(`Executing rclone command [Command details hidden]`);
       
       // Build command with additional flags based on provider
       let fullCommand = `"${settings.rclonePath}" --config "${this.configPath}"`;
@@ -297,8 +302,8 @@ class ConfigManager {
       
       const rcloneProcess = exec(fullCommand, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
         if (error) {
-          console.error(`Rclone error: ${error.message}`);
-          console.error(`Stderr: ${stderr}`);
+          console.error(`Rclone error occurred [Error details hidden]`);
+          console.error(`Stderr received [Details hidden]`);
           
           // Provider-specific error handling
           if (stderr.includes('oauth2: cannot fetch token')) {
@@ -309,13 +314,13 @@ class ConfigManager {
             reject(stderr || error.message);
           }
         } else {
-          console.log(`Rclone output: ${stdout}`);
+          console.log(`Rclone command completed successfully`);
           resolve(stdout);
         }
       });
 
       rcloneProcess.stdout.on('data', (data) => {
-        console.log(`Rclone stdout: ${data}`);
+        console.log(`Rclone stdout received data`);
         
         // Handle provider-specific interactive prompts
         if (data.includes('Enter a team drive ID')) {
@@ -325,7 +330,7 @@ class ConfigManager {
 
       rcloneProcess.stderr.on('data', (data) => {
         const output = data.toString();
-        console.error(`Rclone stderr: ${output}`);
+        console.error(`Rclone stderr received data`);
         
         // Check for any OAuth URL - supporting multiple URL formats
         if (output.includes('http://127.0.0.1:') || output.includes('https://accounts.google.com/o/oauth2/')) {
@@ -345,7 +350,7 @@ class ConfigManager {
           }
           
           if (authUrl && options.event) {
-            console.log(`Opening OAuth URL from executeRclone: ${authUrl}`);
+            console.log(`Opening OAuth URL from executeRclone [URL hidden]`);
             options.event.reply("config-status", "Opening browser for authentication...");
             shell.openExternal(authUrl);
           }
@@ -385,12 +390,12 @@ class ConfigManager {
   }
 
   // Check remote contents
-  async checkRemote(remoteName) {
+  async checkRemote(remoteName, options = {}) {
     try {
       console.log(`Checking remote: ${remoteName}`);
       // Check if there's a subfolder restriction in metadata
       const metadata = this.getRemoteMetadata(remoteName);
-      console.log(`Remote metadata:`, metadata);
+      console.log(`Remote metadata: [Metadata details hidden]`);
       
       const subfolder = metadata && metadata.subfolder ? metadata.subfolder : '';
       
@@ -414,30 +419,41 @@ class ConfigManager {
       // Get total number of files
       console.log(`Executing size command...`);
       const listOutput = await this.executeRclone(`size ${pathPrefix}`);
-      console.log(`Size command result:`, listOutput);
+      console.log(`Size command completed successfully`);
       
-      // Get directories only using lsd command
-      console.log(`Executing lsd command...`);
+      // Get directories only using lsd command, or all files using ls command
+      const useLsCommand = options.useLsCommand || false;
+      const listCommand = useLsCommand ? 'ls' : 'lsd';
+      console.log(`Executing ${listCommand} command...`);
       // lsd lists directories instead of files, which is more efficient than using --max-depth
-      const recentDirs = await this.executeRclone(`lsd ${pathPrefix}`);
+      const recentDirs = await this.executeRclone(`${listCommand} ${pathPrefix}`);
       console.log(`List command result length: ${recentDirs ? recentDirs.length : 0} characters`);
       
-      const header = "        Date       Time    Directory\n" +
-                     "----------------------------------------\n";
-      // Process the directories list if we have data
+      // Set header based on command type
+      const header = options.useLsCommand
+        ? "        Files\n" +
+          "----------------------------------------\n"
+        : "        Date       Time    Directory\n" +
+          "----------------------------------------\n";
+      // Process the directories/files list if we have data
       let topDirs = header;
       
       if (recentDirs && recentDirs.trim()) {
         const processedLines = recentDirs.split('\n')
           .filter(line => line.trim())
           .map(line => {
-            // Format for lsd: -1 YYYY-MM-DD HH:MM:SS -1 dirname
-            const match = line.match(/^-1\s+(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})(?:\.\d+)?\s+-1\s+(.+?)$/);
-            if (match) {
-              const [_, date, time, dirname] = match;
-              return `           ${date} ${time}  ${dirname}`;
+            if (options.useLsCommand) {
+              // Format for ls: path/to/file
+              return `           ${line}`;
+            } else {
+              // Format for lsd: -1 YYYY-MM-DD HH:MM:SS -1 dirname
+              const match = line.match(/^-1\s+(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})(?:\.\d+)?\s+-1\s+(.+?)$/);
+              if (match) {
+                const [_, date, time, dirname] = match;
+                return `           ${date} ${time}  ${dirname}`;
+              }
+              return line;
             }
-            return line;
           })
           .slice(0, 100);
         
@@ -450,18 +466,21 @@ class ConfigManager {
         
         if (processedLinesLimited.length > 0) {
           // Add header with count information
+          const itemType = options.useLsCommand ? 'files' : 'directories';
           if (totalDirsCount > 100) {
-            topDirs += `Showing top 100 of ${totalDirsCount} directories:\n\n`;
+            topDirs += `Showing top 100 of ${totalDirsCount} ${itemType}:\n\n`;
           } else {
-            topDirs += `Showing all ${totalDirsCount} directories:\n\n`;
+            topDirs += `Showing all ${totalDirsCount} ${itemType}:\n\n`;
           }
           
           topDirs += processedLinesLimited.join('\n');
         } else {
-          topDirs += "No directories found";
+          const itemType = options.useLsCommand ? 'files' : 'directories';
+          topDirs += `No ${itemType} found`;
         }
       } else {
-        topDirs += "No directories found";
+        const itemType = options.useLsCommand ? 'files' : 'directories';
+        topDirs += `No ${itemType} found`;
       }
       
       console.log('Processed directory listing complete');
@@ -475,7 +494,7 @@ class ConfigManager {
         recentFiles: topDirs
       };
     } catch (error) {
-      console.error('Error in checkRemote:', error);
+      console.error('Error in checkRemote [Error details hidden]');
       // Return graceful error instead of throwing
       // Get metadata and remote config even in error case
       const metadata = this.getRemoteMetadata(remoteName) || {};

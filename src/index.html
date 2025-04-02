@@ -34,7 +34,6 @@
             background-color: #f5f5f5;
             height: 100vh;
             display: flex;
-            flex-direction: column;
             color: var(--text-primary);
             line-height: 1.5;
         }
@@ -46,12 +45,82 @@
             box-shadow: var(--shadow-sm);
             position: fixed;
             top: 0;
-            left: 0;
+            left: 250px; /* Adjusted to make room for sidebar */
             right: 0;
             z-index: 100;
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background-color: #2c3e50;
+            color: white;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 110;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 1.3rem;
+            color: white;
+        }
+
+        .sidebar-menu {
+            padding: 1rem 0;
+            flex: 1;
+        }
+
+        .sidebar-menu-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all var(--transition-speed);
+            cursor: pointer;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-menu-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .sidebar-menu-item.active {
+            background-color: rgba(255, 255, 255, 0.15);
+            color: white;
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .sidebar-menu-item svg {
+            margin-right: 10px;
+            width: 20px;
+            height: 20px;
+        }
+
+        .sidebar-menu-item span {
+            font-weight: 500;
+        }
+
+        .sidebar-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .header h2 {
@@ -60,33 +129,39 @@
         }
         
         .container {
-            margin: 80px 20px 20px;
+            margin: 80px 20px 20px 270px; /* Adjusted to make room for sidebar */
             padding: 0;
             overflow-y: auto;
             flex: 1;
+            width: calc(100% - 290px); /* Adjusted width to account for sidebar */
         }
         
+        /* Improved section styling */
         .section {
             background-color: white;
             padding: 1.5rem;
             border-radius: var(--border-radius);
             box-shadow: var(--shadow-sm);
             margin-bottom: 1.5rem;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
         }
         
+        /* Improved section header styling */
         .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
             border-bottom: 1px solid var(--border-color);
         }
         
-        /* Typography */
+        /* Improved typography */
         h3 {
-            color: var(--text-primary);
-            font-size: 1.2rem;
+            color: var(--primary-color);
+            font-size: 1.3rem;
             font-weight: 600;
             margin: 0;
         }
@@ -342,7 +417,7 @@
         
         .connection-details {
             padding: 1rem;
-            max-height: 600px;
+            max-height: 700px;
             overflow-y: auto;
             font-family: 'Courier New', monospace;
             font-size: 0.9rem;
@@ -354,14 +429,15 @@
             border-radius: 4px;
         }
 
-        /* Remote List Styles */
+        /* Improved remote list styling */
         .remote-list {
-            margin-top: 0.5rem;
+            margin-top: 1rem;
             height: 160px;
             overflow-y: auto;
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            background-color: white;
         }
         
         .remote-items {
@@ -390,18 +466,37 @@
         .remote-item.selected {
             background-color: #e3f2fd;
         }
-        
-        .remote-status {
+        /* Improved remote status container */
+        .remote-status-container {
             margin-top: 1rem;
-            padding: 1rem;
-            background-color: #f8f9fa;
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius);
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+        
+        /* Improved remote status header */
+        .remote-status-header {
+            padding: 0.75rem 1rem;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+        }
+        
+        /* Improved remote status */
+        .remote-status {
+            padding: 1rem;
             font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
             font-size: 0.85rem;
-            max-height: 400px;
-            overflow-y: auto;
+            line-height: 1.5;
             white-space: pre-wrap;
+            height: 300px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            color: #333;
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
         }
         
         .no-remotes {
@@ -507,7 +602,7 @@
             font-size: 0.85rem;
             line-height: 1.5;
             white-space: pre-wrap;
-            height: 180px;
+            height: 300px;
             overflow-y: auto;
             background-color: #f8f9fa;
             color: #333;
@@ -625,16 +720,17 @@
             background-color: #e9ecef;
         }
         
+        /* Improved subsection styling */
         .subsection {
-            margin-bottom: 1rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border-color);
+            background-color: #f9f9f9;
+            border-radius: var(--border-radius);
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
         }
         
         .subsection:last-child {
             margin-bottom: 0;
-            padding-bottom: 0;
-            border-bottom: none;
         }
         
         .placeholder-content {
@@ -706,7 +802,12 @@
         
         /* Responsive Adjustments */
         @media (max-width: 768px) {
+            .sidebar {
+                width: 200px;
+            }
+            
             .header {
+                left: 200px;
                 flex-direction: column;
                 align-items: flex-start;
                 padding: 1rem;
@@ -717,8 +818,10 @@
             }
             
             .container {
+                margin-left: 220px;
                 margin-top: 130px;
                 padding: 0 0.5rem;
+                width: calc(100% - 240px);
             }
             
             .cloud-provider-grid {
@@ -732,106 +835,94 @@
     </style>
 </head>
 <body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>PageFinder Config</h2>
+        </div>
+        <div class="sidebar-menu">
+            <div id="sidebar-menu-cloud" class="sidebar-menu-item active">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383z"/>
+                    <path d="M7.646 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V5.5a.5.5 0 0 0-1 0v8.793l-2.146-2.147a.5.5 0 0 0-.708.708l3 3z"/>
+                </svg>
+                <span>Cloud Config</span>
+            </div>
+            <div id="sidebar-menu-pagefinder" class="sidebar-menu-item">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+                </svg>
+                <span>PageFinder Config</span>
+            </div>
+            <div id="sidebar-menu-test" class="sidebar-menu-item">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+                </svg>
+                <span>Test Connection</span>
+            </div>
+            <div id="sidebar-menu-schedule" class="sidebar-menu-item">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                    <path d="M11 7.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-2 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z"/>
+                </svg>
+                <span>Schedule Process</span>
+            </div>
+            <div id="sidebar-menu-logs" class="sidebar-menu-item">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M5 4a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm-.5 2.5A.5.5 0 0 1 5 6h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zM5 8a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm0 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1H5z"/>
+                    <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm10-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1z"/>
+                </svg>
+                <span>Check Logs</span>
+            </div>
+        </div>
+        <div class="sidebar-footer">
+            <button id="close" class="close-btn" style="width: 100%;">Close Application</button>
+        </div>
+    </div>
+
+    <!-- Header -->
     <div class="header">
         <div style="display: flex; align-items: center; gap: 20px;">
-            <h2>PageFinder Configuration</h2>
             <div id="config-status" style="color: #666; font-size: 0.9em;">Ready to configure...</div>
         </div>
-        <button id="close" class="close-btn">Close Application</button>
     </div>
 
     <div class="container">
-        <!-- Main Menu Section -->
-        <div id="main-menu" class="section">
-            <div class="section-header">
-                <h3>Main Menu</h3>
-            </div>
-            <div class="menu-grid">
-                <button id="menu-cloud-config" class="menu-button">
-                    <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor" style="margin-bottom: 8px;">
-                        <path d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383z"/>
-                        <path d="M7.646 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V5.5a.5.5 0 0 0-1 0v8.793l-2.146-2.147a.5.5 0 0 0-.708.708l3 3z"/>
-                    </svg>
-                    <span>1. Config Cloud</span>
-                </button>
-                <button id="menu-pagefinder-config" class="menu-button">
-                    <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor" style="margin-bottom: 8px;">
-                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
-                    </svg>
-                    <span>2. Config PageFinder</span>
-                </button>
-                <button id="menu-test-connection" class="menu-button">
-                    <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor" style="margin-bottom: 8px;">
-                        <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
-                    </svg>
-                    <span>3. Test Connection</span>
-                </button>
-                <button id="menu-schedule" class="menu-button">
-                    <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor" style="margin-bottom: 8px;">
-                        <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
-                        <path d="M11 7.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-2 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z"/>
-                    </svg>
-                    <span>4. Schedule Process</span>
-                </button>
-            </div>
-            
-            <!-- Function Explanations -->
-            <div class="function-explanations" style="margin-top: 2rem; padding: 1rem; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
-                <h4 style="margin-top: 0; margin-bottom: 0.75rem; color: var(--primary-color);">Quick Guide</h4>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.9rem;">
-                    <div class="function-explanation" style="padding: 0.75rem; background-color: white; border-radius: 6px; border: 1px solid #e9ecef;">
-                        <h5 style="color: var(--primary-color); margin-top: 0; margin-bottom: 0.5rem;">1. Config Cloud</h5>
-                        <p style="margin: 0 0 0.5rem 0;">Add cloud storage (Google Drive, OneDrive, Box, Dropbox, Local) with specific subfolders. Max 3 storages.</p>
-                        <p style="margin: 0; color: #666;"><strong>Tip:</strong> For local storage, the selected folder will be used as the subfolder path.</p>
-                    </div>
-                    
-                    <div class="function-explanation" style="padding: 0.75rem; background-color: white; border-radius: 6px; border: 1px solid #e9ecef;">
-                        <h5 style="color: var(--primary-color); margin-top: 0; margin-bottom: 0.5rem;">2. Config PageFinder</h5>
-                        <p style="margin: 0 0 0.5rem 0;">Set up PageFinder configuration to connect to your storage bucket.</p>
-                        <p style="margin: 0; color: #d9534f;"><strong>Note:</strong> Requires config file from your PageFinder.ai account.</p>
-                    </div>
-                    
-                    <div class="function-explanation" style="padding: 0.75rem; background-color: white; border-radius: 6px; border: 1px solid #e9ecef;">
-                        <h5 style="color: var(--primary-color); margin-top: 0; margin-bottom: 0.5rem;">3. Test Connection</h5>
-                        <p style="margin: 0 0 0.5rem 0;">Verify connectivity between cloud storage and PageFinder.</p>
-                        <p style="margin: 0; color: #28a745;"><strong>Note:</strong> Test only - doesn't modify any files.</p>
-                    </div>
-                    
-                    <div class="function-explanation" style="padding: 0.75rem; background-color: white; border-radius: 6px; border: 1px solid #e9ecef;">
-                        <h5 style="color: var(--primary-color); margin-top: 0; margin-bottom: 0.5rem;">4. Schedule Process</h5>
-                        <p style="margin: 0 0 0.5rem 0;">Set up automatic sync between cloud storage and PageFinder.</p>
-                        <p style="margin: 0; color: #666;"><strong>Tip:</strong> Check "Enable" to activate scheduling (hourly/daily/weekly/monthly).</p>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Cloud Config Section (initially hidden) -->
-        <div id="cloud-config-section" class="section" style="display: none;">
+        <!-- Cloud Config Section -->
+        <div id="cloud-config-section" class="section">
             <div class="section-header">
-                <h3>Cloud Storage Configuration</h3>
-                <button id="back-to-menu" class="secondary-btn">
-                    <svg width="16" height="16" viewBox="0 0 16 16" style="margin-right: 5px;">
-                        <path fill="currentColor" d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 7.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5z"/>
-                    </svg>
-                    Back to Menu
-                </button>
+                <h3>Storage Management</h3>
             </div>
 
             <!-- Remotes and Remote Status Grid Layout -->
             <div class="cloud-config-grid">
                 <!-- Remote List Section -->
                 <div class="subsection">
-                    <div class="section-header">
-                        <h4>Connected Remotes</h4>
-                        <button id="reload-remotes">
-                            <svg width="16" height="16" viewBox="0 0 16 16" style="margin-right: 5px;">
-                                <path fill="currentColor" d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/>
-                                <path fill="currentColor" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/>
-                            </svg>
-                            Refresh
-                        </button>
+                    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h4>Storage Connections</h4>
+                        <div style="display: flex; gap: 10px;">
+                            <select id="storage-type-select" class="schedule-select" style="min-width: 150px;">
+                                <option value="drive">Google Drive</option>
+                                <option value="onedrive">OneDrive</option>
+                                <option value="dropbox">Dropbox</option>
+                                <option value="box">Box</option>
+                                <option value="local">Local Storage</option>
+                            </select>
+                            <button id="add-storage-btn" class="secondary-btn" style="display: flex; align-items: center;">
+                                <svg width="16" height="16" viewBox="0 0 16 16" style="margin-right: 5px;">
+                                    <path fill="currentColor" d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                                </svg>
+                                Add
+                            </button>
+                            <button id="reload-remotes">
+                                <svg width="16" height="16" viewBox="0 0 16 16" style="margin-right: 5px;">
+                                    <path fill="currentColor" d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/>
+                                    <path fill="currentColor" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/>
+                                </svg>
+                                Refresh
+                            </button>
+                        </div>
                     </div>
                     <div id="remote-list" class="remote-list">
                         <div class="no-remotes">Loading remotes...</div>
@@ -840,10 +931,16 @@
                 
                 <!-- Remote Status Section -->
                 <div class="subsection">
+                    <div class="option-row">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="use-ls-command-cloud">
+                            <span class="checkbox-label">List all files (slower but more detailed)</span>
+                        </label>
+                    </div>
                     <div id="remote-status-container" class="remote-status-container">
-                        <div class="remote-status-header">Remote Status</div>
+                        <div class="remote-status-header">Connection Details</div>
                         <div id="remote-status" class="remote-status">
-                            Select a remote and click the check icon to view details.
+                            Select a storage connection and click the check icon to view details.
                         </div>
                     </div>
                 </div>
@@ -851,62 +948,24 @@
             
             <div id="status"></div>
 
-            <div class="subsection">
-                <div class="section-header">
-                    <h4>Add New Remote</h4>
-                </div>
-                <!-- Cloud Provider Buttons -->
-                <div class="cloud-provider-grid">
-                    <button id="add-gdrive" class="gdrive">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" alt="Google Drive Icon">
-                        Google Drive
-                    </button>
-                    <button id="add-onedrive" class="onedrive">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Microsoft_Office_OneDrive_%282019%E2%80%93present%29.svg" alt="OneDrive Icon">
-                        OneDrive
-                    </button>
-                    <button id="add-dropbox" class="dropbox">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Dropbox_Icon.svg" alt="Dropbox Icon">
-                        Dropbox
-                    </button>
-                    <button id="add-box" class="box">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Box_Box_Logo_%282017-present%29.svg" alt="Box Icon">
-                        Box
-                    </button>
-                    <button id="add-local" class="local">
-                        <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" style="filter: brightness(0) invert(1);">
-                            <path d="M9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.825a2 2 0 0 1-1.991-1.819l-.637-7a2 2 0 0 1 1.99-2.181h4.017a2 2 0 0 0 1.523-.734l.6-.738a1 1 0 0 1 .76-.366"/>
-                            <path fill-rule="evenodd" d="M2 8a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11A.5.5 0 0 1 2 8"/>
-                        </svg>
-                        Local Storage
-                    </button>
-                </div>
-            </div>
+            <!-- Status message area -->
+            <div id="status"></div>
         </div>
 
         <!-- PageFinder Config Section (initially hidden) -->
         <div id="pagefinder-config-section" class="section" style="display: none;">
             <div class="section-header">
                 <h3>PageFinder Configuration</h3>
-                <button id="back-to-menu-pagefinder" class="secondary-btn">
-                    <svg width="16" height="16" viewBox="0 0 16 16" style="margin-right: 5px;">
-                        <path fill="currentColor" d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 7.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5z"/>
-                    </svg>
-                    Back to Menu
-                </button>
             </div>
             <div class="subsection">
-                <div class="section-header">
-                    <h4>PageFinder Configuration</h4>
-                </div>
+                <p style="margin-bottom: 20px;">You need to download your configuration file to local storage (e.g., pf-user-1.conf) from PageFinder.</p>
                 
                 <div class="pf-config-grid">
                     <!-- Read Config Section -->
                     <div class="pf-config-item">
                         <h5>1. Set Configuration</h5>
-                        <p>Select a local rclone configuration file for PageFinder</p>
                         <div class="config-file-input">
-                            <input type="text" id="pf-config-path" placeholder="Path to rclone config file" readonly>
+                            <input type="text" id="pf-config-path" placeholder="Path to your config file. e.g. pf-user-1.conf" readonly>
                             <button id="browse-pf-config" class="secondary-btn">Browse</button>
                         </div>
                         <button id="validate-pf-config" class="action-button">
@@ -918,14 +977,7 @@
                     
                     <!-- Check Connection Section -->
                     <div class="pf-config-item">
-                        <h5>2. Check Connection</h5>
-                        <p>Verify connection to the S3 bucket specified in the config file</p>
-                        <div class="connection-info">
-                            <div id="pf-config-info" class="config-info">
-                                <p>Connection parameters will be automatically extracted from the config file.</p>
-                                <p>Click "Check Connection" to verify access to the storage bucket.</p>
-                            </div>
-                        </div>
+                        <h5>2. Verify PageFinder Storage</h5>
                         <div class="option-row">
                             <label class="checkbox-container">
                                 <input type="checkbox" id="use-ls-command-pf">
@@ -941,9 +993,9 @@
                 </div>
                 
                 <!-- Connection Result Area -->
-                <div class="connection-result">
+                <div class="connection-result" style="margin-top: 30px;">
                     <h5>Connection Details</h5>
-                    <div id="pf-connection-details" class="connection-details">No connection attempt made yet.</div>
+                    <div id="pf-connection-details" class="connection-details" style="height: 250px;">No connection attempt made yet.</div>
                 </div>
             </div>
         </div>
@@ -951,13 +1003,7 @@
         <!-- Test Connection Section (initially hidden) -->
         <div id="test-connection-section" class="section" style="display: none;">
             <div class="section-header">
-                <h3>Test Connection</h3>
-                <button id="back-to-menu-test" class="secondary-btn">
-                    <svg width="16" height="16" viewBox="0 0 16 16" style="margin-right: 5px;">
-                        <path fill="currentColor" d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 7.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5z"/>
-                    </svg>
-                    Back to Menu
-                </button>
+                <h3>Connection Testing</h3>
             </div>
             <div class="subsection">
                 <div class="section-header">
@@ -984,16 +1030,43 @@
             </div>
         </div>
 
+        <!-- Logs Section (initially hidden) -->
+        <div id="logs-section" class="section" style="display: none;">
+            <div class="section-header">
+                <h3>Sync Logs</h3>
+            </div>
+            <div class="subsection">
+                <div class="section-header">
+                    <h4>View Sync Log File</h4>
+                </div>
+                <p>View the detailed log of the synchronization process between your cloud storage and PageFinder.</p>
+                
+                <div class="pf-config-item">
+                    <div style="display: flex; gap: 10px;">
+                        <button id="view-sync-log" class="action-button" style="flex: 1;">
+                            <span>View Sync Log</span>
+                        </button>
+                        <button id="clean-logs" class="action-button" style="flex: 1; background-color: #e74c3c;">
+                            <span>Delete Previous Logs</span>
+                        </button>
+                    </div>
+                    <div id="log-status" class="status-message"></div>
+                </div>
+                
+                <!-- Log Display Area -->
+                <div class="connection-result">
+                    <h5 style="background-color: #2c3e50; color: white; padding: 10px; margin: 0; border-radius: 4px 4px 0 0;">
+                        Sync Log File
+                    </h5>
+                    <div id="sync-log-details" class="connection-details" style="height: 400px;">No log file found or no sync has been run yet.</div>
+                </div>
+            </div>
+        </div>
+
         <!-- Schedule Process Section (initially hidden) -->
         <div id="schedule-section" class="section" style="display: none;">
             <div class="section-header">
-                <h3>Schedule Process</h3>
-                <button id="back-to-menu-schedule" class="secondary-btn">
-                    <svg width="16" height="16" viewBox="0 0 16 16" style="margin-right: 5px;">
-                        <path fill="currentColor" d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 7.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5z"/>
-                    </svg>
-                    Back to Menu
-                </button>
+                <h3>Sync Scheduling</h3>
             </div>
             <div class="subsection">
                 <div class="section-header">

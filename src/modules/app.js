@@ -554,10 +554,10 @@ class CloudConfigApp {
     });
     
     // Handle remote check request
-    ipcMain.on("check-remote", async (event, remoteName) => {
+    ipcMain.on("check-remote", async (event, { remoteName, useLsCommand }) => {
       try {
         event.reply("config-status", `Checking remote ${remoteName}...`);
-        const result = await this.configManager.checkRemote(remoteName);
+        const result = await this.configManager.checkRemote(remoteName, { useLsCommand });
         const metadata = this.configManager.getRemoteMetadata(remoteName);
         
         event.reply("remote-status", {
@@ -937,6 +937,58 @@ class CloudConfigApp {
         });
       }
     });
+    
+    // Handle get sync log request
+    ipcMain.on("get-sync-log", async (event) => {
+      try {
+        const logPath = path.join(process.cwd(), 'logs', 'sync_detail.log');
+        
+        // Check if the log file exists
+        if (!fs.existsSync(logPath)) {
+          event.reply("sync-log-content", {
+            success: false,
+            error: "Log file not found. No sync has been run yet."
+          });
+          return;
+        }
+        
+        // Read the log file
+        const logContent = fs.readFileSync(logPath, 'utf8');
+        
+        // Send the log content back to the renderer
+        event.reply("sync-log-content", {
+          success: true,
+          content: logContent
+        });
+      } catch (error) {
+        console.error('Error reading sync log:', error);
+        event.reply("sync-log-content", {
+          success: false,
+          error: error.message
+        });
+      }
+    });
+    
+    // Handle clean logs request
+    ipcMain.on("clean-logs", async (event) => {
+      try {
+        // Import the clean-logs script
+        const { cleanLogs } = require('../../scripts/clean-logs');
+        
+        // Call the cleanLogs function
+        const result = await cleanLogs();
+        
+        // Send the result back to the renderer
+        event.reply("clean-logs-result", result);
+      } catch (error) {
+        // Don't log errors to console to avoid printing sensitive information
+        event.reply("clean-logs-result", {
+          success: false,
+          error: error.message
+        });
+      }
+    });
+    
     // Handle generate sync script request
     ipcMain.handle('generate-sync-script', async (event, { schedule }) => {
       try {
@@ -1174,81 +1226,6 @@ class CloudConfigApp {
     }
   }
   
-  /**
-   * Update the sync.sh script with the current cloud configuration
-   */
-  async updateSyncScript() {
-      try {
-        console.log('Updating sync.sh script with current cloud configuration...');
-        
-        // Get the script paths
-        const scriptPath = path.join(process.cwd(), 'scripts', 'sync.sh');
-        const updateScriptPath = path.join(process.cwd(), 'scripts', 'update-sync.js');
-        
-        // Get the cloud remotes
-        const cloudRemotes = await this.configManager.listRemotes();
-        
-        // Create a temporary JSON file with the current configuration
-        const os = require('os');
-        const tempConfigPath = path.join(os.tmpdir(), 'pf-config-temp.json');
-        
-        // Get the PageFinder config path
-        const pfConfigPath = path.join(this.configManager.appConfigDir, 'pf.conf');
-        
-        // Check if the PageFinder config file exists
-        if (!fs.existsSync(pfConfigPath)) {
-          console.log('PageFinder config file not found, skipping sync.sh update');
-          return;
-        }
-        
-        // Read the PageFinder config file to extract the remote name and bucket
-        const pfConfigContent = fs.readFileSync(pfConfigPath, 'utf8');
-        
-        // Extract remote name from config
-        let pfRemoteName = '';
-        const remoteMatch = pfConfigContent.match(/\[([^\]]+)\]/);
-        if (remoteMatch) {
-          pfRemoteName = remoteMatch[1];
-        }
-        
-        if (!pfRemoteName) {
-          console.log('No remote found in the PageFinder config file, skipping sync.sh update');
-          return;
-        }
-        
-        // Extract bucket from config
-        let bucketName = 'asi-essentia-ai-new';
-        const bucketMatch = pfConfigContent.match(/bucket\s*=\s*([^\n]+)/);
-        if (bucketMatch) {
-          bucketName = bucketMatch[1].trim();
-        }
-        
-        // Create the config data
-        const configData = {
-          combinedConfigPath: this.configManager.configPath,
-          cloudRemotes: cloudRemotes,
-          pfRemoteName: pfRemoteName,
-          bucketName: bucketName
-        };
-        
-        // Write the config data to the temporary file
-        fs.writeFileSync(tempConfigPath, JSON.stringify(configData, null, 2));
-        
-        // Execute the update-sync.js script
-        const { execSync } = require('child_process');
-        execSync(`node "${updateScriptPath}" --config "${tempConfigPath}"`, {
-          encoding: 'utf8',
-          maxBuffer: 10 * 1024 * 1024
-        });
-        
-        // Clean up the temporary file
-        fs.unlinkSync(tempConfigPath);
-        
-        console.log('Successfully updated sync.sh script');
-      } catch (error) {
-        console.error('Error updating sync.sh script:', error);
-      }
-    }
 }
 
 module.exports = CloudConfigApp;

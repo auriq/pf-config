@@ -2,7 +2,7 @@
 
 # Sync script for PageFinder
 # This script is generated automatically by the PageFinder Configuration tool
-# Generated on: 2025-04-02T05:33:38.555Z
+# Generated on: 2025-04-02T23:16:34.756Z
 
 # Set UTF-8 locale to handle double-byte characters correctly
 export LC_ALL=en_US.UTF-8
@@ -94,7 +94,7 @@ fi
 
 # Set up common variables
 DEST_PATH="pf-user-2:asi-essentia-ai-new/user/pf-user-2"
-CLOUD_REMOTES="ko2 box5"
+CLOUD_REMOTES="ko2 g8"
 
 # Function to purge a folder
 purge_folder() {

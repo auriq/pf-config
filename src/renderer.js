@@ -11,9 +11,8 @@ class ConfigUIController {
     this.currentProvider = null;
     this.selectedRemote = null;
     this.currentSubfolderRemote = null;
-    
-    // Show main menu initially
-    this.showSection('menu');
+    // Show cloud config section initially
+    this.showSection('cloud');
     
     // Request initial remotes list (in background)
     this.refreshRemotesList();
@@ -56,33 +55,32 @@ class ConfigUIController {
    * Initialize all DOM elements
    */
   initializeElements() {
-   // Main menu sections
-   this.mainMenuSection = document.getElementById("main-menu");
+   // Content sections
    this.cloudConfigSection = document.getElementById("cloud-config-section");
    this.pagefinderConfigSection = document.getElementById("pagefinder-config-section");
    this.testConnectionSection = document.getElementById("test-connection-section");
+   this.logsSection = document.getElementById("logs-section");
    this.scheduleSection = document.getElementById("schedule-section");
    
-   // Menu buttons
-   this.cloudConfigButton = document.getElementById("menu-cloud-config");
-   this.pagefinderConfigButton = document.getElementById("menu-pagefinder-config");
-   this.testConnectionButton = document.getElementById("menu-test-connection");
-   this.scheduleButton = document.getElementById("menu-schedule");
+   // Sidebar menu items
+   this.sidebarCloudButton = document.getElementById("sidebar-menu-cloud");
+   this.sidebarPagefinderButton = document.getElementById("sidebar-menu-pagefinder");
+   this.sidebarTestButton = document.getElementById("sidebar-menu-test");
+   this.sidebarLogsButton = document.getElementById("sidebar-menu-logs");
+   this.sidebarScheduleButton = document.getElementById("sidebar-menu-schedule");
    
-   // Back to menu buttons
-   this.backToMenuButton = document.getElementById("back-to-menu");
-   this.backToMenuPFButton = document.getElementById("back-to-menu-pagefinder");
-   this.backToMenuTestButton = document.getElementById("back-to-menu-test");
-   this.backToMenuScheduleButton = document.getElementById("back-to-menu-schedule");
+   // Sidebar menu items array for easier manipulation
+   this.sidebarMenuItems = [
+     this.sidebarCloudButton,
+     this.sidebarPagefinderButton,
+     this.sidebarTestButton,
+     this.sidebarLogsButton,
+     this.sidebarScheduleButton
+   ];
    
-   // Provider buttons
-   this.providerButtons = {
-     gdrive: document.getElementById("add-gdrive"),
-     onedrive: document.getElementById("add-onedrive"),
-     box: document.getElementById("add-box"),
-     dropbox: document.getElementById("add-dropbox"),
-     local: document.getElementById("add-local")
-   };
+   // Storage selection elements
+   this.storageTypeSelect = document.getElementById("storage-type-select");
+   this.addStorageButton = document.getElementById("add-storage-btn");
    
    // Action buttons
    this.closeButton = document.getElementById("close");
@@ -134,12 +132,19 @@ class ConfigUIController {
     this.pfConnectionStatusIcon = document.getElementById("connection-status-icon");
     this.pfConnectionDetailsElement = document.getElementById("pf-connection-details");
     this.useLsCommandPfCheckbox = document.getElementById("use-ls-command-pf");
+    this.useLsCommandCloudCheckbox = document.getElementById("use-ls-command-cloud");
     
     // Test connection elements
     this.runTestConnectionButton = document.getElementById("run-test-connection");
     this.testConnectionStatusElement = document.getElementById("test-connection-status");
     this.testStatusIcon = document.getElementById("test-status-icon");
     this.testConnectionDetailsElement = document.getElementById("test-connection-details");
+    
+    // Logs elements
+    this.viewSyncLogButton = document.getElementById("view-sync-log");
+    this.cleanLogsButton = document.getElementById("clean-logs");
+    this.logStatusElement = document.getElementById("log-status");
+    this.syncLogDetailsElement = document.getElementById("sync-log-details");
     
     // Schedule elements
     this.scheduleEnabledCheckbox = document.getElementById("schedule-enabled");
@@ -158,7 +163,7 @@ class ConfigUIController {
     
     // Create a map of provider names to rclone provider types
     this.providers = new Map([
-      ['gdrive', 'drive'],
+      ['drive', 'drive'],
       ['onedrive', 'onedrive'],
       ['box', 'box'],
       ['dropbox', 'dropbox'],
@@ -170,17 +175,12 @@ class ConfigUIController {
    * Set up all event listeners
    */
   setupEventListeners() {
-    // Main menu navigation
-    this.cloudConfigButton.addEventListener("click", () => this.showSection("cloud"));
-    this.pagefinderConfigButton.addEventListener("click", () => this.showSection("pagefinder"));
-    this.testConnectionButton.addEventListener("click", () => this.showSection("test"));
-    this.scheduleButton.addEventListener("click", () => this.showSection("schedule"));
-    
-    // Back to menu handlers
-    this.backToMenuButton.addEventListener("click", () => this.showSection("menu"));
-    this.backToMenuPFButton.addEventListener("click", () => this.showSection("menu"));
-    this.backToMenuTestButton.addEventListener("click", () => this.showSection("menu"));
-    this.backToMenuScheduleButton.addEventListener("click", () => this.showSection("menu"));
+    // Sidebar menu navigation
+    this.sidebarCloudButton.addEventListener("click", () => this.showSection("cloud"));
+    this.sidebarPagefinderButton.addEventListener("click", () => this.showSection("pagefinder"));
+    this.sidebarTestButton.addEventListener("click", () => this.showSection("test"));
+    this.sidebarLogsButton.addEventListener("click", () => this.showSection("logs"));
+    this.sidebarScheduleButton.addEventListener("click", () => this.showSection("schedule"));
     
     // PageFinder config handlers
     if (this.browsePFConfigButton) {
@@ -199,11 +199,21 @@ class ConfigUIController {
     if (this.checkPFConnectionButton) {
       this.checkPFConnectionButton.addEventListener("click", () => this.checkPFConnection());
     }
-    
     // Test connection button handler
     if (this.runTestConnectionButton) {
       this.runTestConnectionButton.addEventListener("click", () => this.testConnection());
     }
+    
+    // View sync log button handler
+    if (this.viewSyncLogButton) {
+      this.viewSyncLogButton.addEventListener("click", () => this.checkSyncLog());
+    }
+    
+    // Clean logs button handler
+    if (this.cleanLogsButton) {
+      this.cleanLogsButton.addEventListener("click", () => this.cleanLogs());
+    }
+    
     
     // Schedule handlers
     if (this.scheduleFrequencySelect) {
@@ -214,13 +224,14 @@ class ConfigUIController {
       this.saveScheduleButton.addEventListener("click", () => this.saveSchedule());
     }
     
-    // Set up provider button handlers
-    Object.entries(this.providerButtons).forEach(([key, button]) => {
-      button.addEventListener("click", () => {
-        this.currentProvider = key;
-        this.showRemoteDialog(key);
+    // Set up storage selection handler
+    if (this.addStorageButton) {
+      this.addStorageButton.addEventListener("click", () => {
+        const selectedProvider = this.storageTypeSelect.value;
+        this.currentProvider = selectedProvider;
+        this.showRemoteDialog(selectedProvider);
       });
-    });
+    }
     
     // Rclone setup dialog handlers
     this.useDefaultPathButton.addEventListener("click", () => this.handleDefaultRclonePath());
@@ -263,6 +274,26 @@ class ConfigUIController {
         this.refreshRemotesList();
       }
     });
+    
+    ipcRenderer.on("sync-log-content", (event, { success, content, error }) => {
+      if (success) {
+        this.displaySyncLog(content);
+      } else {
+        this.displaySyncLogError(error);
+      }
+    });
+    
+    ipcRenderer.on("clean-logs-result", (event, { success, message, error }) => {
+      if (success) {
+        this.logStatusElement.textContent = message;
+        this.logStatusElement.className = "status-message success";
+        // Refresh the log display
+        this.checkSyncLog();
+      } else {
+        this.logStatusElement.textContent = error || message;
+        this.logStatusElement.className = "status-message error";
+      }
+    });
   }
   
   /**
@@ -271,35 +302,46 @@ class ConfigUIController {
    */
   async showSection(section) {
     // Hide all sections first
-    this.mainMenuSection.style.display = 'none';
     this.cloudConfigSection.style.display = 'none';
     this.pagefinderConfigSection.style.display = 'none';
     this.testConnectionSection.style.display = 'none';
+    this.logsSection.style.display = 'none';
     this.scheduleSection.style.display = 'none';
     
-    // Show the requested section
+    // Remove active class from all sidebar menu items
+    this.sidebarMenuItems.forEach(item => {
+      item.classList.remove('active');
+    });
+    
+    // Show the requested section and set active sidebar item
     switch(section) {
-      case 'menu':
-        this.mainMenuSection.style.display = 'block';
-        break;
       case 'cloud':
         this.cloudConfigSection.style.display = 'block';
+        this.sidebarCloudButton.classList.add('active');
         break;
       case 'pagefinder':
         this.pagefinderConfigSection.style.display = 'block';
+        this.sidebarPagefinderButton.classList.add('active');
         // Check if pf.conf exists
         this.checkPFConfigExists();
         break;
       case 'test':
         this.testConnectionSection.style.display = 'block';
+        this.sidebarTestButton.classList.add('active');
+        break;
+      case 'logs':
+        this.logsSection.style.display = 'block';
+        this.sidebarLogsButton.classList.add('active');
         break;
       case 'schedule':
         this.scheduleSection.style.display = 'block';
+        this.sidebarScheduleButton.classList.add('active');
         // Load current schedule when showing the schedule section
         await this.loadCurrentSchedule();
         break;
       default:
-        this.mainMenuSection.style.display = 'block';
+        this.cloudConfigSection.style.display = 'block';
+        this.sidebarCloudButton.classList.add('active');
     }
   }
   
@@ -789,6 +831,76 @@ class ConfigUIController {
   }
   
   /**
+   * Check the sync log file
+   */
+  async checkSyncLog() {
+    try {
+      this.logStatusElement.textContent = "Loading sync log...";
+      this.logStatusElement.className = "status-message";
+      this.showLoading("Loading sync log...");
+      
+      // Request the log content from the main process
+      ipcRenderer.send("get-sync-log");
+    } catch (error) {
+      console.error('Error checking sync log:', error);
+      this.logStatusElement.textContent = `Error: ${error.message}`;
+      this.logStatusElement.className = "status-message error";
+      this.hideLoading();
+    }
+  }
+  
+  /**
+   * Display the sync log content
+   * @param {string} content - The log content
+   */
+  displaySyncLog(content) {
+    this.hideLoading();
+    
+    if (this.syncLogDetailsElement) {
+      if (content && content.trim()) {
+        this.syncLogDetailsElement.textContent = content;
+      } else {
+        this.syncLogDetailsElement.textContent = "Log file is empty.";
+      }
+    }
+    
+    this.logStatusElement.textContent = "Sync log loaded successfully.";
+    this.logStatusElement.className = "status-message success";
+  }
+  
+  /**
+   * Display an error when loading the sync log
+   * @param {string} error - The error message
+   */
+  displaySyncLogError(error) {
+    this.hideLoading();
+    
+    if (this.syncLogDetailsElement) {
+      this.syncLogDetailsElement.textContent = `Error loading log file: ${error}`;
+    }
+    
+    this.logStatusElement.textContent = `Error loading sync log: ${error}`;
+    this.logStatusElement.className = "status-message error";
+  }
+  
+  /**
+   * Clean logs by keeping only the last event block
+   */
+  async cleanLogs() {
+    try {
+      this.logStatusElement.textContent = "Cleaning logs...";
+      this.logStatusElement.className = "status-message";
+      
+      // Send the clean-logs request to the main process
+      ipcRenderer.send("clean-logs");
+    } catch (error) {
+      // Don't log errors to console to avoid printing sensitive information
+      this.logStatusElement.textContent = `Error cleaning logs: ${error.message}`;
+      this.logStatusElement.className = "status-message error";
+    }
+  }
+  
+  /**
    * Validate and save the PageFinder config file
    */
   async validatePFConfig() {
@@ -1268,7 +1380,16 @@ class ConfigUIController {
           this.statusElement.textContent = "Testing remote connection...";
           this.remoteListContainer.classList.add('loading');
           this.showLoading("Testing remote connection...");
-          ipcRenderer.send("check-remote", nameText);
+          
+          // Get the checkbox value
+          const useLsCommandCheckbox = document.getElementById('use-ls-command-cloud');
+          const useLsCommand = useLsCommandCheckbox && useLsCommandCheckbox.checked;
+          
+          // Send the remote name and checkbox value
+          ipcRenderer.send("check-remote", {
+            remoteName: nameText,
+            useLsCommand: useLsCommand
+          });
         });
 
         // Delete button handler
@@ -1442,9 +1563,12 @@ class ConfigUIController {
    * @param {boolean} disabled - Whether to disable the buttons
    */
   disableProviderButtons(disabled) {
-    Object.values(this.providerButtons).forEach(button => {
-      button.disabled = disabled;
-    });
+    if (this.addStorageButton) {
+      this.addStorageButton.disabled = disabled;
+    }
+    if (this.storageTypeSelect) {
+      this.storageTypeSelect.disabled = disabled;
+    }
   }
   
   /**
