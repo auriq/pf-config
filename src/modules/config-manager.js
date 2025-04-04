@@ -106,19 +106,26 @@ class ConfigManager {
     try {
       const metadataPath = this.getMetadataPath();
       if (!fs.existsSync(metadataPath)) {
+        console.log(`Metadata file does not exist at ${metadataPath}, no need to delete anything`);
         return true;
       }
+      
+      console.log(`Deleting metadata for ${remoteName} from ${metadataPath}`);
       
       const allMetadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
       
       if (allMetadata.remotes && allMetadata.remotes[remoteName]) {
+        console.log(`Found metadata for ${remoteName}, deleting it`);
         delete allMetadata.remotes[remoteName];
         fs.writeFileSync(metadataPath, JSON.stringify(allMetadata, null, 2));
+        console.log(`Successfully deleted metadata for ${remoteName}`);
+      } else {
+        console.log(`No metadata found for ${remoteName} in ${metadataPath}`);
       }
       
       return true;
     } catch (error) {
-      console.error('Error deleting remote metadata [Error details hidden]');
+      console.error(`Error deleting remote metadata for ${remoteName}: ${error.message}`);
       return false;
     }
   }

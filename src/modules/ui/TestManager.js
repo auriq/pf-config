@@ -140,8 +140,9 @@ class TestManager {
           detailsOutput += `Test ${index + 1}: ${testResult.remote}\n`;
           detailsOutput += `Command: ${testResult.command}\n`;
           detailsOutput += `Status: ${testResult.success ? 'Success ✓' : 'Failed ✗'}\n`;
-          // Display the raw output exactly as it appears in the terminal
-          detailsOutput += `Output:\n${testResult.output || 'No output'}\n`;
+          // Sanitize the output to remove any potential tokens
+          const sanitizedOutput = this.sanitizeOutput(testResult.output || 'No output');
+          detailsOutput += `Output:\n${sanitizedOutput}\n`;
           detailsOutput += "----------------------------------------\n\n";
         });
       } else {
@@ -227,7 +228,9 @@ class TestManager {
       let detailsOutput = "Sync Operation Results:\n\n";
       
       if (result.output) {
-        detailsOutput += result.output;
+        // Sanitize the output to remove any potential tokens
+        const sanitizedOutput = this.sanitizeOutput(result.output);
+        detailsOutput += sanitizedOutput;
       } else {
         detailsOutput += "No output available.";
       }
@@ -257,6 +260,43 @@ class TestManager {
     }
   }
   
+  /**
+   * Sanitize output to remove any sensitive information like tokens
+   * @param {string} output - The raw output to sanitize
+   * @returns {string} - The sanitized output with tokens redacted
+   */
+  sanitizeOutput(output) {
+    if (!output) return '';
+    
+    // Patterns to detect sensitive information
+    const sensitivePatterns = [
+      // OAuth tokens
+      { pattern: /(ya29\.[0-9A-Za-z\-_]+)/g, replacement: "[OAUTH_TOKEN_REDACTED]" },
+      // Bearer tokens
+      { pattern: /(Bearer\s+[0-9A-Za-z\-_\.]+)/gi, replacement: "Bearer [TOKEN_REDACTED]" },
+      // Access and refresh tokens
+      { pattern: /(access_token|refresh_token|id_token)["']?\s*[:=]\s*["']([^"']+)["']/gi, replacement: "$1=\"[TOKEN_REDACTED]\"" },
+      // Common API key formats
+      { pattern: /(api[_-]?key|apikey|key|token)["']?\s*[:=]\s*["']([^"']{8,})["']/gi, replacement: "$1=\"[API_KEY_REDACTED]\"" },
+      // JWT tokens (common format: xxx.yyy.zzz)
+      { pattern: /eyJ[a-zA-Z0-9_-]{5,}\.[a-zA-Z0-9_-]{5,}\.[a-zA-Z0-9_-]{5,}/g, replacement: "[JWT_TOKEN_REDACTED]" },
+      // Any token-like parameter in URLs
+      { pattern: /([?&](?:token|access_token|auth)=)([^&\s]{8,})/g, replacement: "$1[TOKEN_REDACTED]" },
+      // Common OAuth response patterns
+      { pattern: /"token_type"\s*:\s*"[^"]+"\s*,\s*"access_token"\s*:\s*"[^"]+"/g, replacement: "\"token_type\":\"Bearer\",\"access_token\":\"[TOKEN_REDACTED]\"" },
+      // General long random strings that could be tokens (40+ chars)
+      { pattern: /([a-zA-Z0-9_\-\.=]{40,})/g, replacement: "[POSSIBLE_TOKEN_REDACTED]" }
+    ];
+    
+    // Apply all sanitization patterns
+    let sanitized = output;
+    for (const { pattern, replacement } of sensitivePatterns) {
+      sanitized = sanitized.replace(pattern, replacement);
+    }
+    
+    return sanitized;
+  }
+
   /**
    * Check for token expiration or authentication errors in the test results
    * @param {Object} result - The test result object

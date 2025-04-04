@@ -233,8 +233,15 @@ else
         if [ "$REMOTE_TYPE" = "local" ]; then
             # For local remotes, get the path from the config
             REMOTE_PATH=$(echo "$REMOTE_SECTION" | grep "^path" | cut -d= -f2 | tr -d ' ')
-            SOURCE_PATH="${REMOTE_PATH}"
-            log "Remote ${REMOTE} is local type with path: ${REMOTE_PATH}"
+            if [ -n "$SUBFOLDER" ]; then
+                # If subfolder is specified, use it
+                SOURCE_PATH="${REMOTE}:/${SUBFOLDER}"
+                log "Remote ${REMOTE} is local type with subfolder: ${SUBFOLDER}, using ${SOURCE_PATH} as source"
+            else
+                # Otherwise, use the remote with root path
+                SOURCE_PATH="${REMOTE}:/"
+                log "Remote ${REMOTE} is local type with path: ${REMOTE_PATH}, using ${SOURCE_PATH} as source"
+            fi
         else
             # For non-local remotes (like drive or box)
             if [ -n "$SUBFOLDER" ]; then

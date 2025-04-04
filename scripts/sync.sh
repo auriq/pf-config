@@ -2,7 +2,7 @@
 
 # Sync script for PageFinder
 # This script is generated automatically by the PageFinder Configuration tool
-# Generated on: 2025-04-04T00:17:29.743Z
+# Generated on: 2025-04-04T01:57:54.293Z
 
 # Set UTF-8 locale to handle double-byte characters correctly
 export LC_ALL=en_US.UTF-8
@@ -94,7 +94,7 @@ fi
 
 # Set up common variables
 DEST_PATH="pf-user-2:asi-essentia-ai-new/user/pf-user-2"
-CLOUD_REMOTES="g8 ggg box"
+CLOUD_REMOTES="gg"
 
 # Function to purge a folder
 purge_folder() {
@@ -233,8 +233,15 @@ else
         if [ "$REMOTE_TYPE" = "local" ]; then
             # For local remotes, get the path from the config
             REMOTE_PATH=$(echo "$REMOTE_SECTION" | grep "^path" | cut -d= -f2 | tr -d ' ')
-            SOURCE_PATH="${REMOTE_PATH}"
-            log "Remote ${REMOTE} is local type with path: ${REMOTE_PATH}"
+            if [ -n "$SUBFOLDER" ]; then
+                # If subfolder is specified, use it
+                SOURCE_PATH="${REMOTE}:/${SUBFOLDER}"
+                log "Remote ${REMOTE} is local type with subfolder: ${SUBFOLDER}, using ${SOURCE_PATH} as source"
+            else
+                # Otherwise, use the remote with root path
+                SOURCE_PATH="${REMOTE}:/"
+                log "Remote ${REMOTE} is local type with path: ${REMOTE_PATH}, using ${SOURCE_PATH} as source"
+            fi
         else
             # For non-local remotes (like drive or box)
             if [ -n "$SUBFOLDER" ]; then

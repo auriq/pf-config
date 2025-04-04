@@ -4,6 +4,67 @@ const path = require("path");
 const fs = require('fs-extra');
 
 /**
+ * Utility function to sanitize log and console output to remove sensitive information
+ * @param {string} content - The content to sanitize
+ * @returns {string} - The sanitized content with sensitive information redacted
+ */
+function sanitizeOutput(content) {
+  if (!content || typeof content !== 'string') return content;
+  
+  // Patterns to detect sensitive information
+  const sensitivePatterns = [
+    // OAuth tokens
+    { pattern: /(ya29\.[0-9A-Za-z\-_]+)/g, replacement: "[OAUTH_TOKEN_REDACTED]" },
+    // Bearer tokens
+    { pattern: /(Bearer\s+[0-9A-Za-z\-_\.]+)/gi, replacement: "Bearer [TOKEN_REDACTED]" },
+    // Access and refresh tokens
+    { pattern: /(access_token|refresh_token|id_token)["']?\s*[:=]\s*["']([^"']+)["']/gi, replacement: "$1=\"[TOKEN_REDACTED]\"" },
+    // Common API key formats
+    { pattern: /(api[_-]?key|apikey|key|token)["']?\s*[:=]\s*["']([^"']{8,})["']/gi, replacement: "$1=\"[API_KEY_REDACTED]\"" },
+    // JWT tokens (common format: xxx.yyy.zzz)
+    { pattern: /eyJ[a-zA-Z0-9_-]{5,}\.[a-zA-Z0-9_-]{5,}\.[a-zA-Z0-9_-]{5,}/g, replacement: "[JWT_TOKEN_REDACTED]" },
+    // Any token-like parameter in URLs
+    { pattern: /([?&](?:token|access_token|auth)=)([^&\s]{8,})/g, replacement: "$1[TOKEN_REDACTED]" },
+    // Common OAuth response patterns
+    { pattern: /"token_type"\s*:\s*"[^"]+"\s*,\s*"access_token"\s*:\s*"[^"]+"/g, replacement: "\"token_type\":\"Bearer\",\"access_token\":\"[TOKEN_REDACTED]\"" },
+    // General long random strings that could be tokens (40+ chars)
+    { pattern: /([a-zA-Z0-9_\-\.=]{40,})/g, replacement: "[POSSIBLE_TOKEN_REDACTED]" }
+  ];
+  
+  // Apply all sanitization patterns
+  let sanitized = content;
+  for (const { pattern, replacement } of sensitivePatterns) {
+    sanitized = sanitized.replace(pattern, replacement);
+  }
+  
+  return sanitized;
+}
+
+// Override console.log and console.error to sanitize output
+const originalConsoleLog = console.log;
+const originalConsoleError = console.error;
+
+console.log = function() {
+  const args = Array.from(arguments).map(arg => {
+    if (typeof arg === 'string') {
+      return sanitizeOutput(arg);
+    }
+    return arg;
+  });
+  originalConsoleLog.apply(console, args);
+};
+
+console.error = function() {
+  const args = Array.from(arguments).map(arg => {
+    if (typeof arg === 'string') {
+      return sanitizeOutput(arg);
+    }
+    return arg;
+  });
+  originalConsoleError.apply(console, args);
+};
+
+/**
  * Application main class - handles window creation and IPC events
  */
 class CloudConfigApp {
@@ -200,6 +261,7 @@ class CloudConfigApp {
         return null;
       }
       
+      // Return the selected path directly since that's what the renderer expects
       return result.filePaths[0];
     });
     
@@ -499,14 +561,29 @@ class CloudConfigApp {
             }
             
             // Create the local remote directly
-            // Properly escape the local path by ensuring it's correctly quoted
-            const escapedPath = localPath.replace(/"/g, '\\"'); // Escape any quotes in the path
-            let configCommand = `"${settings.rclonePath}" config create "${name}" "${provider}" path="${escapedPath}" --config "${this.configManager.configPath}"`;
-            console.log('Executing local storage config command:', configCommand);
+            // Ensure the local path is properly formatted
+            // Use rclone with '--obscure' to handle spaces and special characters in paths
+            // First, create the config without the path to avoid escaping issues
+            let createCommand = `"${settings.rclonePath}" config create "${name}" "${provider}" --config "${this.configManager.configPath}"`;
+            console.log('Creating local remote without path:', createCommand);
             await new Promise((resolve, reject) => {
-              exec(configCommand, (error, stdout, stderr) => {
+              exec(createCommand, (error, stdout, stderr) => {
                 if (error) {
-                  event.reply("config-status", `Failed to configure local storage: ${stderr || error.message}`);
+                  event.reply("config-status", `Failed to create local storage: ${stderr || error.message}`);
+                  reject(error);
+                } else {
+                  resolve(stdout);
+                }
+              });
+            });
+            
+            // Now set the path parameter separately
+            let pathCommand = `"${settings.rclonePath}" config update "${name}" path="${localPath}" --config "${this.configManager.configPath}"`;
+            console.log('Setting local storage path:', pathCommand);
+            await new Promise((resolve, reject) => {
+              exec(pathCommand, (error, stdout, stderr) => {
+                if (error) {
+                  event.reply("config-status", `Failed to set local storage path: ${stderr || error.message}`);
                   reject(error);
                 } else {
                   event.reply("config-status", `Local storage configured successfully!`);
@@ -692,11 +769,17 @@ class CloudConfigApp {
     // Handle delete remote request
     ipcMain.on("delete-remote", async (event, remoteName) => {
       try {
+        console.log(`Deleting remote ${remoteName}...`);
+        
         // Delete the remote configuration
         await this.configManager.deleteRemote(remoteName);
+        console.log(`Successfully deleted remote configuration for ${remoteName}`);
         
         // Also delete any metadata for this remote
-        this.configManager.deleteRemoteMetadata(remoteName);
+        const metadataDeleted = this.configManager.deleteRemoteMetadata(remoteName);
+        if (!metadataDeleted) {
+          console.warn(`Warning: Failed to delete metadata for remote ${remoteName}. This may cause orphaned metadata.`);
+        }
         
         event.reply("delete-status", {
           success: true,
@@ -770,21 +853,10 @@ class CloudConfigApp {
           // Check if this is a local remote
           const isLocalRemote = remoteMatch[0].includes('type = local');
           
-          if (isLocalRemote) {
-            // For local remotes, update the path parameter instead of adding a subfolder
-            const pathRegex = /path\s*=\s*([^\n]+)/;
-            const pathMatch = remoteMatch[0].match(pathRegex);
-            
-            if (pathMatch) {
-              // Replace the path with the subfolder
-              const updatedRemoteSection = remoteMatch[0].replace(pathRegex, `path = ${subfolder}`);
-              cloudConfig = cloudConfig.replace(remoteMatch[0], updatedRemoteSection);
-            }
-          } else {
-            // For non-local remotes, add the subfolder parameter
-            const updatedRemoteSection = remoteMatch[0].replace(/\n$/, '') + `\nsubfolder = ${subfolder}\n`;
-            cloudConfig = cloudConfig.replace(remoteMatch[0], updatedRemoteSection);
-          }
+          // For both local and non-local remotes, add the subfolder parameter
+          // We don't modify the path for local remotes anymore as it breaks the remote
+          const updatedRemoteSection = remoteMatch[0].replace(/\n$/, '') + `\nsubfolder = ${subfolder}\n`;
+          cloudConfig = cloudConfig.replace(remoteMatch[0], updatedRemoteSection);
         }
       }
     }
@@ -1062,10 +1134,13 @@ class CloudConfigApp {
         // Read the log file
         const logContent = fs.readFileSync(logPath, 'utf8');
         
-        // Send the log content back to the renderer
+        // Sanitize the log content to remove any tokens or sensitive information
+        const sanitizedLogContent = sanitizeOutput(logContent);
+        
+        // Send the sanitized log content back to the renderer
         event.reply("sync-log-content", {
           success: true,
-          content: logContent
+          content: sanitizedLogContent
         });
       } catch (error) {
         console.error('Error reading sync log:', error);
@@ -1247,10 +1322,13 @@ class CloudConfigApp {
         
         // Use execSync to run the command
         const { execSync } = require('child_process');
-        const output = execSync(command, {
+        let output = execSync(command, {
           encoding: 'utf8',
           maxBuffer: 10 * 1024 * 1024  // 10MB buffer
         });
+        
+        // Sanitize the output to remove any tokens before returning
+        output = sanitizeOutput(output);
         
         return {
           success: true,
@@ -1259,10 +1337,15 @@ class CloudConfigApp {
         };
       } catch (error) {
         console.error('Error running sync with exec:', error);
+        
+        // Sanitize any error output to remove sensitive information
+        const sanitizedErrorMessage = sanitizeOutput(error.message);
+        const sanitizedStderr = error.stderr ? sanitizeOutput(error.stderr) : sanitizedErrorMessage;
+        
         return {
           success: false,
-          message: `Sync operation failed: ${error.message}`,
-          output: error.stderr || error.message
+          message: `Sync operation failed: ${sanitizedErrorMessage}`,
+          output: sanitizedStderr
         };
       }
     });

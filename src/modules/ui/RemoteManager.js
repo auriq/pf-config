@@ -46,10 +46,11 @@ class RemoteManager {
     try {
       const result = await ipcRenderer.invoke('browse-local-folder');
       
-      if (result.success) {
+      // The result is the folder path directly, or null if cancelled
+      if (result) {
         const localPathInput = document.getElementById('local-path');
         if (localPathInput) {
-          localPathInput.value = result.folderPath;
+          localPathInput.value = result;
         }
       }
     } catch (error) {

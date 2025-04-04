@@ -102,8 +102,15 @@ class EventHandler {
     if (saveScheduleButton) {
       saveScheduleButton.addEventListener("click", () => this.controller.logScheduleManager.saveSchedule());
     }
+    // Set up storage selection handlers
+    if (storageTypeSelect) {
+      // Add change listener to handle showing/hiding local path group when dropdown changes
+      storageTypeSelect.addEventListener("change", () => {
+        // Store the selected provider type for later use
+        this.controller.currentProviderType = storageTypeSelect.value;
+      });
+    }
     
-    // Set up storage selection handler
     if (addStorageButton) {
       addStorageButton.addEventListener("click", () => {
         const selectedProvider = storageTypeSelect.value;

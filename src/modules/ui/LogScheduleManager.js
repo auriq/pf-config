@@ -424,7 +424,9 @@ class LogScheduleManager {
     
     if (syncLogDetailsElement) {
       if (content && content.trim()) {
-        syncLogDetailsElement.textContent = content;
+        // Sanitize the log content to remove any sensitive information
+        const sanitizedContent = this.sanitizeLogContent(content);
+        syncLogDetailsElement.textContent = sanitizedContent;
       } else {
         syncLogDetailsElement.textContent = "Log file is empty.";
       }
@@ -434,6 +436,43 @@ class LogScheduleManager {
       logStatusElement.textContent = "Sync log loaded successfully.";
       logStatusElement.className = "status-message success";
     }
+  }
+  
+  /**
+   * Sanitize log content to remove any sensitive information like tokens
+   * @param {string} content - The log content to sanitize
+   * @returns {string} - The sanitized log content
+   */
+  sanitizeLogContent(content) {
+    if (!content) return '';
+    
+    // Patterns to detect sensitive information
+    const sensitivePatterns = [
+      // OAuth tokens
+      { pattern: /(ya29\.[0-9A-Za-z\-_]+)/g, replacement: "[OAUTH_TOKEN_REDACTED]" },
+      // Bearer tokens
+      { pattern: /(Bearer\s+[0-9A-Za-z\-_\.]+)/gi, replacement: "Bearer [TOKEN_REDACTED]" },
+      // Access and refresh tokens
+      { pattern: /(access_token|refresh_token|id_token)["']?\s*[:=]\s*["']([^"']+)["']/gi, replacement: "$1=\"[TOKEN_REDACTED]\"" },
+      // Common API key formats
+      { pattern: /(api[_-]?key|apikey|key|token)["']?\s*[:=]\s*["']([^"']{8,})["']/gi, replacement: "$1=\"[API_KEY_REDACTED]\"" },
+      // JWT tokens (common format: xxx.yyy.zzz)
+      { pattern: /eyJ[a-zA-Z0-9_-]{5,}\.[a-zA-Z0-9_-]{5,}\.[a-zA-Z0-9_-]{5,}/g, replacement: "[JWT_TOKEN_REDACTED]" },
+      // Any token-like parameter in URLs
+      { pattern: /([?&](?:token|access_token|auth)=)([^&\s]{8,})/g, replacement: "$1[TOKEN_REDACTED]" },
+      // Common OAuth response patterns
+      { pattern: /"token_type"\s*:\s*"[^"]+"\s*,\s*"access_token"\s*:\s*"[^"]+"/g, replacement: "\"token_type\":\"Bearer\",\"access_token\":\"[TOKEN_REDACTED]\"" },
+      // General long random strings that could be tokens (40+ chars)
+      { pattern: /([a-zA-Z0-9_\-\.=]{40,})/g, replacement: "[POSSIBLE_TOKEN_REDACTED]" }
+    ];
+    
+    // Apply all sanitization patterns
+    let sanitized = content;
+    for (const { pattern, replacement } of sensitivePatterns) {
+      sanitized = sanitized.replace(pattern, replacement);
+    }
+    
+    return sanitized;
   }
 
   /**
