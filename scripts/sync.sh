@@ -2,7 +2,7 @@
 
 # Sync script for PageFinder
 # This script is generated automatically by the PageFinder Configuration tool
-# Generated on: 2025-04-04T04:30:40.669Z
+# Generated on: 2025-04-04T23:16:05.828Z
 
 # Set UTF-8 locale to handle double-byte characters correctly
 export LC_ALL=en_US.UTF-8
@@ -94,7 +94,7 @@ fi
 
 # Set up common variables
 DEST_PATH="pf-user-2:asi-essentia-ai-new/user/pf-user-2"
-CLOUD_REMOTES="koi box one"
+CLOUD_REMOTES="gg koi"
 
 # Function to purge a folder
 purge_folder() {
@@ -223,19 +223,39 @@ else
         REMOTE_TYPE=$(grep -A10 "^\[${REMOTE}\]" "${CONFIG}" | grep "type" | head -1 | cut -d= -f2 | tr -d ' ')
         
         # Set source path based on remote type
-        # Check if there's a subfolder path set for this remote
-        # Extract the remote section from the config file
-        REMOTE_SECTION=$(grep -A50 "^\[${REMOTE}\]" "${CONFIG}" | sed -n "/^\[${REMOTE}\]/,/^\[/p" | grep -v "^\[" | grep -v "^$" | tail -n +2)
+        # Check if there's a subfolder path set for this remote in the metadata file
+        METADATA_PATH="${HOME}/.config/pf-config/remotes-metadata.json"
         
-        # Look for subfolder in the remote section only
-        SUBFOLDER=$(echo "$REMOTE_SECTION" | grep "^subfolder" | cut -d= -f2 | tr -d ' ')
+        # Check if metadata file exists
+        if [ -f "${METADATA_PATH}" ]; then
+            # Extract subfolder from metadata file using jq if available, otherwise use grep and sed
+            if command -v jq &> /dev/null; then
+                SUBFOLDER=$(jq -r ".remotes.\"${REMOTE}\".subfolder // \"\"" "${METADATA_PATH}")
+            else
+                # Fallback to grep and sed if jq is not available
+                REMOTE_METADATA=$(grep -A20 "\"${REMOTE}\":" "${METADATA_PATH}" | grep -m1 "\"subfolder\":" | sed 's/.*"subfolder"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+                SUBFOLDER="${REMOTE_METADATA:-}"
+            fi
+            
+            # Log the subfolder found in metadata
+            if [ -n "$SUBFOLDER" ]; then
+                log "Found subfolder in metadata for ${REMOTE}: ${SUBFOLDER}"
+            fi
+        else
+            log "Metadata file not found at ${METADATA_PATH}, checking config file"
+            # Extract the remote section from the config file as fallback
+            REMOTE_SECTION=$(grep -A50 "^\[${REMOTE}\]" "${CONFIG}" | sed -n "/^\[${REMOTE}\]/,/^\[/p" | grep -v "^\[" | grep -v "^$" | tail -n +2)
+            
+            # Look for subfolder in the remote section only as fallback
+            SUBFOLDER=$(echo "$REMOTE_SECTION" | grep "^subfolder" | cut -d= -f2 | tr -d ' ')
+        fi
         
         if [ "$REMOTE_TYPE" = "local" ]; then
-            # For local remotes, get the path from the config
-            REMOTE_PATH=$(echo "$REMOTE_SECTION" | grep "^path" | cut -d= -f2 | tr -d ' ')
+            # For local remotes with subfolder
             if [ -n "$SUBFOLDER" ]; then
-                # If subfolder is specified, use it
-                SOURCE_PATH="${REMOTE}:/${SUBFOLDER}"
+                # For local remotes, we should keep the leading "/" and just append the subfolder path
+                # e.g., koi:/Users/koi/work/test
+                SOURCE_PATH="${REMOTE}:${SUBFOLDER}"
                 log "Remote ${REMOTE} is local type with subfolder: ${SUBFOLDER}, using ${SOURCE_PATH} as source"
             else
                 # Otherwise, use the remote with root path
