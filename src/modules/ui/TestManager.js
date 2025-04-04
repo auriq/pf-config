@@ -133,20 +133,18 @@ class TestManager {
       }
       
       // Format the results for display
-      let detailsOutput = "Test Results:\n\n";
+      let detailsOutput = "Sync Test Results:\n\n";
       
-      if (result.results && result.results.length > 0) {
-        result.results.forEach((testResult, index) => {
-          detailsOutput += `Test ${index + 1}: ${testResult.remote}\n`;
-          detailsOutput += `Command: ${testResult.command}\n`;
-          detailsOutput += `Status: ${testResult.success ? 'Success ✓' : 'Failed ✗'}\n`;
-          // Sanitize the output to remove any potential tokens
-          const sanitizedOutput = this.sanitizeOutput(testResult.output || 'No output');
-          detailsOutput += `Output:\n${sanitizedOutput}\n`;
-          detailsOutput += "----------------------------------------\n\n";
-        });
+      if (result.syncOutput) {
+        // Display the sync.sh output directly
+        detailsOutput += "Running sync.sh with verbose flag:\n";
+        detailsOutput += "----------------------------------------\n";
+        
+        // Sanitize the output to remove any potential tokens
+        const sanitizedOutput = this.sanitizeOutput(result.syncOutput);
+        detailsOutput += sanitizedOutput;
       } else {
-        detailsOutput += "No test results available.";
+        detailsOutput += "No sync test output available.";
       }
       
       testConnectionDetailsElement.textContent = detailsOutput;
