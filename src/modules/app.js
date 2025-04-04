@@ -17,6 +17,113 @@ class CloudConfigApp {
     }
   }
 
+  // Check for and clean up zombie rclone processes before starting
+  async checkForZombieProcesses() {
+    try {
+      const { exec } = require('child_process');
+      const platform = process.platform;
+      
+      // Different commands for different platforms
+      let checkCommand;
+      if (platform === 'win32') {
+        checkCommand = 'tasklist /fi "imagename eq rclone.exe" /fo csv /v';
+      } else {
+        // macOS or Linux
+        checkCommand = 'ps -ef | grep "rclone config" | grep -v grep';
+      }
+      
+      // Execute the command to find rclone processes
+      const zombieProcesses = await new Promise((resolve) => {
+        exec(checkCommand, (error, stdout) => {
+          if (error) {
+            // No processes found or command failed
+            resolve([]);
+            return;
+          }
+          
+          // Parse the output to get process IDs
+          const processes = [];
+          if (platform === 'win32') {
+            // Parse Windows CSV output
+            const lines = stdout.split('\n').filter(line => line.includes('rclone.exe'));
+            for (const line of lines) {
+              const parts = line.split(',');
+              if (parts.length >= 2 && parts[1]) {
+                const pid = parts[1].replace(/"/g, '').trim();
+                processes.push({ pid, command: line });
+              }
+            }
+          } else {
+            // Parse Unix ps output
+            const lines = stdout.split('\n').filter(Boolean);
+            for (const line of lines) {
+              const parts = line.trim().split(/\s+/);
+              if (parts.length >= 2) {
+                const pid = parts[1];
+                processes.push({ pid, command: line });
+              }
+            }
+          }
+          
+          resolve(processes);
+        });
+      });
+      
+      // If zombie processes were found, ask user for confirmation to kill them
+      if (zombieProcesses.length > 0) {
+        // Create dialog only if app is ready
+        if (app.isReady()) {
+          const { dialog } = require('electron');
+          
+          const processDetails = zombieProcesses.map(p => `PID: ${p.pid}`).join('\n');
+          const result = await dialog.showMessageBox({
+            type: 'warning',
+            title: 'Zombie Rclone Processes Detected',
+            message: 'Found hanging rclone processes that might interfere with OAuth authentication',
+            detail: `${zombieProcesses.length} rclone processes found:\n${processDetails}\n\nWould you like to terminate these processes?`,
+            buttons: ['Yes, terminate them', 'No, leave them running'],
+            defaultId: 0,
+            cancelId: 1
+          });
+          
+          // If user confirmed, kill the processes
+          if (result.response === 0) {
+            for (const process of zombieProcesses) {
+              try {
+                const killCommand = platform === 'win32'
+                  ? `taskkill /F /PID ${process.pid}`
+                  : `kill -9 ${process.pid}`;
+                  
+                await new Promise((resolve) => {
+                  exec(killCommand, (error) => {
+                    if (error) {
+                      console.error(`Failed to kill process ${process.pid}:`, error);
+                    } else {
+                      console.log(`Successfully terminated process ${process.pid}`);
+                    }
+                    resolve();
+                  });
+                });
+              } catch (error) {
+                console.error(`Error killing process ${process.pid}:`, error);
+              }
+            }
+            
+            // Show confirmation after termination
+            await dialog.showMessageBox({
+              type: 'info',
+              title: 'Processes Terminated',
+              message: 'Zombie rclone processes have been terminated',
+              buttons: ['OK']
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking for zombie processes:', error);
+    }
+  }
+
   // Create the main application window
   createWindow() {
     this.mainWindow = new BrowserWindow({
@@ -1115,6 +1222,51 @@ class CloudConfigApp {
       app.quit();
     });
     
+    // Handle running sync.sh with -e flag (execute mode)
+    ipcMain.handle('run-sync-with-exec', async () => {
+      try {
+        console.log('Running sync.sh with --exec flag');
+        
+        // Get the script path
+        const scriptPath = path.join(process.cwd(), 'scripts', 'sync.sh');
+        
+        // Check if the script exists
+        if (!fs.existsSync(scriptPath)) {
+          return {
+            success: false,
+            message: 'Sync script not found. Please check your installation.'
+          };
+        }
+        
+        // Make sure the script is executable
+        fs.chmodSync(scriptPath, '755');
+        
+        // Run the script with the -e flag for execute mode (not just dry-run)
+        const command = `"${scriptPath}" -e`;
+        console.log(`Executing command: ${command}`);
+        
+        // Use execSync to run the command
+        const { execSync } = require('child_process');
+        const output = execSync(command, {
+          encoding: 'utf8',
+          maxBuffer: 10 * 1024 * 1024  // 10MB buffer
+        });
+        
+        return {
+          success: true,
+          message: 'Sync operation completed successfully!',
+          output: output
+        };
+      } catch (error) {
+        console.error('Error running sync with exec:', error);
+        return {
+          success: false,
+          message: `Sync operation failed: ${error.message}`,
+          output: error.stderr || error.message
+        };
+      }
+    });
+    
     // End of setupIPCHandlers
   }
   
@@ -1198,7 +1350,10 @@ class CloudConfigApp {
   init() {
     // Only proceed if we're in an Electron context
     if (typeof app !== 'undefined') {
-      app.whenReady().then(() => {
+      app.whenReady().then(async () => {
+        // Check for and clean up zombie rclone processes before creating the window
+        await this.checkForZombieProcesses();
+        
         const mainWindow = this.createWindow();
         
         // Check rclone path on startup
