@@ -38,7 +38,7 @@ class EventHandler {
       checkPFConnectionButton,
       runTestConnectionButton,
       viewSyncLogButton,
-      cleanLogsButton,
+      viewExecLogButton,
       scheduleFrequencySelect,
       saveScheduleButton,
       addStorageButton,
@@ -84,14 +84,10 @@ class EventHandler {
       runTestConnectionButton.addEventListener("click", () => this.controller.testManager.testConnection());
     }
     
-    // View sync log button handler
-    if (viewSyncLogButton) {
-      viewSyncLogButton.addEventListener("click", () => this.controller.logScheduleManager.checkSyncLog());
-    }
-    
-    // Clean logs button handler
-    if (cleanLogsButton) {
-      cleanLogsButton.addEventListener("click", () => this.controller.logScheduleManager.cleanLogs());
+    // Check logs button handler
+    const checkLogsButton = document.getElementById('check-logs');
+    if (checkLogsButton) {
+      checkLogsButton.addEventListener("click", () => this.controller.logScheduleManager.checkSyncLog());
     }
     
     // Schedule handlers
@@ -101,6 +97,12 @@ class EventHandler {
     
     if (saveScheduleButton) {
       saveScheduleButton.addEventListener("click", () => this.controller.logScheduleManager.saveSchedule());
+    }
+    
+    // Clear schedule button handler
+    const clearScheduleButton = document.getElementById('clear-schedule');
+    if (clearScheduleButton) {
+      clearScheduleButton.addEventListener("click", () => this.controller.logScheduleManager.clearSchedule());
     }
     // Set up storage selection handlers
     if (storageTypeSelect) {

@@ -1045,12 +1045,9 @@
                 <p>View the detailed log of the synchronization process between your cloud storage and PageFinder.</p>
                 
                 <div class="pf-config-item">
-                    <div style="display: flex; gap: 10px;">
-                        <button id="view-sync-log" class="action-button" style="flex: 1;">
-                            <span>View Sync Log</span>
-                        </button>
-                        <button id="clean-logs" class="action-button" style="flex: 1; background-color: #e74c3c;">
-                            <span>Delete Previous Logs</span>
+                    <div>
+                        <button id="check-logs" class="action-button" style="width: 100%;">
+                            <span>Check Logs</span>
                         </button>
                     </div>
                     <div id="log-status" class="status-message"></div>
@@ -1078,23 +1075,17 @@
                 <p>Configure automatic synchronization between your cloud storage and PageFinder.</p>
                 
                 <div class="pf-config-item">
-                    <h5>1. Enable Scheduling</h5>
-                    <div class="input-group">
-                        <label>
-                            <input type="checkbox" id="schedule-enabled"> Enable automatic synchronization
-                        </label>
-                    </div>
-                    
-                    <h5>2. Schedule Frequency</h5>
+                    <h5>Schedule Frequency</h5>
                     <div class="input-group">
                         <label>Frequency:</label>
                         <select id="schedule-frequency" class="schedule-select">
-                            <option value="hourly">Hourly</option>
                             <option value="daily" selected>Daily</option>
                             <option value="weekly">Weekly</option>
-                            <option value="monthly">Monthly</option>
                         </select>
                     </div>
+                    <button id="clear-schedule" class="action-button" style="width: auto; background-color: #e74c3c; margin-top: 1rem; margin-bottom: 1rem;">
+                        <span>Clear Schedule</span>
+                    </button>
                     
                     <div id="daily-options" class="schedule-options">
                         <div class="input-group">
@@ -1160,49 +1151,12 @@
                             </select>
                         </div>
                     </div>
-                    
-                    <div id="monthly-options" class="schedule-options" style="display: none;">
-                        <div class="input-group">
-                            <label>Day of Month:</label>
-                            <select id="schedule-day-of-month" class="schedule-select">
-                                <!-- Days 1-28 -->
-                                <option value="1">1st</option>
-                                <option value="2">2nd</option>
-                                <option value="3">3rd</option>
-                                <option value="4">4th</option>
-                                <option value="5">5th</option>
-                                <option value="6">6th</option>
-                                <option value="7">7th</option>
-                                <option value="8">8th</option>
-                                <option value="9">9th</option>
-                                <option value="10">10th</option>
-                                <option value="11">11th</option>
-                                <option value="12">12th</option>
-                                <option value="13">13th</option>
-                                <option value="14">14th</option>
-                                <option value="15">15th</option>
-                                <option value="16">16th</option>
-                                <option value="17">17th</option>
-                                <option value="18">18th</option>
-                                <option value="19">19th</option>
-                                <option value="20">20th</option>
-                                <option value="21">21st</option>
-                                <option value="22">22nd</option>
-                                <option value="23">23rd</option>
-                                <option value="24">24th</option>
-                                <option value="25">25th</option>
-                                <option value="26">26th</option>
-                                <option value="27">27th</option>
-                                <option value="28">28th</option>
-                            </select>
-                        </div>
                     </div>
                     
                     <button id="save-schedule" class="action-button">
                         <span>Generate Sync Script & Schedule</span>
                         <span id="schedule-status-icon" class="status-icon"></span>
                     </button>
-                    <div id="schedule-status" class="status-message"></div>
                 </div>
                 
                 <!-- Schedule Result Area -->

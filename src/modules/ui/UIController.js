@@ -12,6 +12,9 @@ const TestManager = require("./TestManager");
 const LogScheduleManager = require("./LogScheduleManager");
 const EventHandler = require("./EventHandler");
 
+// Max log size in bytes (2MB)
+const MAX_LOG_SIZE = 2 * 1024 * 1024;
+
 class UIController {
   /**
    * Initialize the UI controller
@@ -179,14 +182,14 @@ class UIController {
     this.scheduleHourSelect = document.getElementById("schedule-hour");
     this.scheduleMinuteSelect = document.getElementById("schedule-minute");
     this.scheduleDayOfWeekSelect = document.getElementById("schedule-day-of-week");
-    this.scheduleDayOfMonthSelect = document.getElementById("schedule-day-of-month");
+    this.scheduleDayOfMonthSelect = null; // Removed monthly option
     this.saveScheduleButton = document.getElementById("save-schedule");
-    this.scheduleStatusElement = document.getElementById("schedule-status");
+    this.scheduleStatusElement = null; // Removed status section
     this.scheduleStatusIcon = document.getElementById("schedule-status-icon");
     this.scheduleDetailsElement = document.getElementById("schedule-details");
     this.dailyOptions = document.getElementById("daily-options");
     this.weeklyOptions = document.getElementById("weekly-options");
-    this.monthlyOptions = document.getElementById("monthly-options");
+    this.monthlyOptions = null; // Removed monthly option
     
     // Create a map of provider names to rclone provider types
     this.providers = new Map([

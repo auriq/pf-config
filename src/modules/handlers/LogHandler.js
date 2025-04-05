@@ -6,6 +6,7 @@
 const { ipcMain } = require("electron");
 const path = require("path");
 const fs = require('fs-extra');
+const { exec } = require('child_process');
 
 /**
  * Class to handle logs and scheduling-related IPC events
@@ -26,6 +27,55 @@ class LogHandler {
    * Set up all logs-related event handlers
    */
   setupEventHandlers() {
+    // Define max log size (2MB)
+    const MAX_LOG_SIZE = 2 * 1024 * 1024; // 2MB in bytes
+    
+    /**
+     * Utility function to trim log file if it exceeds size limit
+     * @param {string} filePath - Path to the log file
+     * @param {number} maxSize - Maximum size in bytes
+     */
+    const trimLogFileIfNeeded = (filePath) => {
+      try {
+        // Check if the file exists
+        if (!fs.existsSync(filePath)) {
+          return;
+        }
+        
+        // Get file stats
+        const stats = fs.statSync(filePath);
+        
+        // If the file is larger than the max size, trim it
+        if (stats.size > MAX_LOG_SIZE) {
+          console.log(`Log file ${filePath} exceeds ${MAX_LOG_SIZE / (1024 * 1024)}MB, trimming...`);
+          
+          // Read the file
+          let content = fs.readFileSync(filePath, 'utf8');
+          
+          // Calculate how much to keep (approximately half of the content)
+          const halfSize = Math.floor(content.length / 2);
+          
+          // Find a newline character after the halfway point to make a clean cut
+          let cutPoint = content.indexOf('\n', halfSize);
+          if (cutPoint === -1) cutPoint = halfSize; // Fallback if no newline found
+          
+          // Keep the second half of the file
+          content = content.substring(cutPoint);
+          
+          // Add a header indicating the file was trimmed
+          const trimHeader = `[LOG TRIMMED AT ${new Date().toISOString()}]\n` +
+                            `Previous log entries were removed to keep file size under ${MAX_LOG_SIZE / (1024 * 1024)}MB\n` +
+                            `-------------------------------------------\n\n`;
+          
+          // Write the trimmed content back to the file
+          fs.writeFileSync(filePath, trimHeader + content);
+          
+          console.log(`Log file ${filePath} trimmed successfully`);
+        }
+      } catch (error) {
+        console.error(`Error trimming log file ${filePath}:`, error);
+      }
+    };
     // Handle get sync log request
     ipcMain.on("get-sync-log", async (event) => {
       try {
@@ -39,6 +89,9 @@ class LogHandler {
           });
           return;
         }
+        
+        // Trim the log file if it exceeds the max size
+        trimLogFileIfNeeded(logPath);
         
         // Read the log file
         const logContent = fs.readFileSync(logPath, 'utf8');
@@ -60,9 +113,68 @@ class LogHandler {
       }
     });
     
-    // Handle clean logs request
+    // Removed exec log handling as requested
+    
+    // Handle save schedule request
+    ipcMain.handle('save-schedule', async (event, schedule) => {
+      try {
+        console.log('Saving schedule:', schedule);
+        
+        // Simple implementation that just stores the schedule in settings
+        this.configManager.setSettings({
+          ...this.configManager.getSettings(),
+          schedule: schedule
+        });
+        
+        // Generate a cron expression (simple implementation)
+        let cronExpression = '';
+        if (schedule.enabled) {
+          // Format: minute hour * * day-of-week
+          // For daily: minute hour * * *
+          // For weekly: minute hour * * day-of-week (0-6, Sunday=0)
+          // For monthly: minute hour day-of-month * *
+          
+          switch (schedule.frequency) {
+            case 'daily':
+              cronExpression = `${schedule.minute} ${schedule.hour} * * *`;
+              break;
+            case 'weekly':
+              cronExpression = `${schedule.minute} ${schedule.hour} * * ${schedule.dayOfWeek}`;
+              break;
+            case 'monthly':
+              cronExpression = `${schedule.minute} ${schedule.hour} ${schedule.dayOfMonth} * *`;
+              break;
+          }
+          
+          // Log the generated cron expression
+          console.log('Generated cron expression:', cronExpression);
+          
+          // Here you would typically write this to a crontab or system scheduler
+          // For simplicity, we're just returning success
+        }
+        
+        return {
+          success: true,
+          message: 'Schedule saved successfully',
+          cronExpression: cronExpression
+        };
+      } catch (error) {
+        console.error('Error saving schedule:', error);
+        return {
+          success: false,
+          message: `Failed to save schedule: ${error.message}`,
+          error: error.message
+        };
+      }
+    });
+    
+    // Removed exec log handling as requested
+    
+    // This handler is deprecated and will be removed in a future version
     ipcMain.on("clean-logs", async (event) => {
       try {
+        console.log("The clean-logs feature is deprecated and will be removed");
+        
         // Import the clean-logs script
         const { cleanLogs } = require('../../../scripts/clean-logs');
         

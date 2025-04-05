@@ -12,17 +12,36 @@ class LogScheduleManager {
    */
   constructor(controller) {
     this.controller = controller;
+    
+    // Set up event listeners for log operations
+    this.setupEventListeners();
+    
+    // Max log size in bytes (2MB)
+    this.MAX_LOG_SIZE = 2 * 1024 * 1024;
+  }
+  
+  /**
+   * Set up event listeners for IPC communication
+   */
+  setupEventListeners() {
+    // Listen for sync log content
+    ipcRenderer.on("sync-log-content", (event, result) => {
+      if (result.success) {
+        this.displaySyncLog(result.content);
+      } else {
+        this.displaySyncLogError(result.error);
+      }
+    });
   }
 
   /**
    * Update schedule options based on selected frequency
    */
   updateScheduleOptions() {
-    const { 
+    const {
       scheduleFrequencySelect,
       dailyOptions,
-      weeklyOptions,
-      monthlyOptions
+      weeklyOptions
     } = this.controller;
     
     if (!scheduleFrequencySelect) return;
@@ -32,7 +51,6 @@ class LogScheduleManager {
     // Hide all frequency-specific options first
     if (dailyOptions) dailyOptions.style.display = 'none';
     if (weeklyOptions) weeklyOptions.style.display = 'none';
-    if (monthlyOptions) monthlyOptions.style.display = 'none';
     
     // Show options based on selected frequency
     switch (frequency) {
@@ -43,10 +61,6 @@ class LogScheduleManager {
         if (dailyOptions) dailyOptions.style.display = 'block';
         if (weeklyOptions) weeklyOptions.style.display = 'block';
         break;
-      case 'monthly':
-        if (dailyOptions) dailyOptions.style.display = 'block';
-        if (monthlyOptions) monthlyOptions.style.display = 'block';
-        break;
     }
   }
 
@@ -56,31 +70,18 @@ class LogScheduleManager {
   async loadCurrentSchedule() {
     try {
       const {
-        scheduleStatusElement,
-        scheduleEnabledCheckbox,
         scheduleFrequencySelect,
         scheduleHourSelect,
         scheduleMinuteSelect,
         scheduleDayOfWeekSelect,
-        scheduleDayOfMonthSelect,
-        scheduleDetailsElement,
-        scheduleStatusIcon
+        scheduleDetailsElement
       } = this.controller;
-      
-      if (scheduleStatusElement) {
-        scheduleStatusElement.textContent = "Loading current schedule...";
-        scheduleStatusElement.className = "status-message";
-      }
       
       // Get the current schedule from the main process
       const result = await ipcRenderer.invoke('get-current-schedule');
       
       if (result.success && result.schedule) {
         // Update UI with the current schedule
-        if (scheduleEnabledCheckbox) {
-          scheduleEnabledCheckbox.checked = result.schedule.enabled;
-        }
-        
         if (scheduleFrequencySelect) {
           scheduleFrequencySelect.value = result.schedule.frequency;
         }
@@ -97,8 +98,6 @@ class LogScheduleManager {
         // Set frequency-specific values
         if (result.schedule.frequency === 'weekly' && result.schedule.dayOfWeek !== null && scheduleDayOfWeekSelect) {
           scheduleDayOfWeekSelect.value = result.schedule.dayOfWeek.toString();
-        } else if (result.schedule.frequency === 'monthly' && result.schedule.dayOfMonth !== null && scheduleDayOfMonthSelect) {
-          scheduleDayOfMonthSelect.value = result.schedule.dayOfMonth.toString();
         }
         
         // Update the display of options based on frequency
@@ -110,27 +109,7 @@ class LogScheduleManager {
         if (scheduleDetailsElement) {
           scheduleDetailsElement.textContent = detailsOutput;
         }
-        
-        if (scheduleStatusElement) {
-          scheduleStatusElement.textContent = "Schedule loaded successfully.";
-          scheduleStatusElement.className = "status-message success";
-        }
-        
-        if (scheduleStatusIcon) {
-          scheduleStatusIcon.innerHTML = "✓";
-          scheduleStatusIcon.className = "status-icon success";
-        }
       } else {
-        if (scheduleStatusElement) {
-          scheduleStatusElement.textContent = result.message || "Failed to load schedule.";
-          scheduleStatusElement.className = "status-message error";
-        }
-        
-        if (scheduleStatusIcon) {
-          scheduleStatusIcon.innerHTML = "✗";
-          scheduleStatusIcon.className = "status-icon error";
-        }
-        
         if (scheduleDetailsElement) {
           scheduleDetailsElement.textContent = "No schedule has been set up yet.";
         }
@@ -139,20 +118,8 @@ class LogScheduleManager {
       console.error('Error loading schedule:', error);
       
       const {
-        scheduleStatusElement,
-        scheduleStatusIcon,
         scheduleDetailsElement
       } = this.controller;
-      
-      if (scheduleStatusElement) {
-        scheduleStatusElement.textContent = `Error: ${error.message}`;
-        scheduleStatusElement.className = "status-message error";
-      }
-      
-      if (scheduleStatusIcon) {
-        scheduleStatusIcon.innerHTML = "✗";
-        scheduleStatusIcon.className = "status-icon error";
-      }
       
       if (scheduleDetailsElement) {
         scheduleDetailsElement.textContent = "Failed to load schedule due to an error.";
@@ -180,8 +147,6 @@ class LogScheduleManager {
     if (schedule.frequency === 'weekly' && schedule.dayOfWeek !== null) {
       const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       detailsOutput += `Day of Week: ${days[schedule.dayOfWeek]}\n`;
-    } else if (schedule.frequency === 'monthly' && schedule.dayOfMonth !== null) {
-      detailsOutput += `Day of Month: ${schedule.dayOfMonth}\n`;
     }
     
     // Add cron expression if available
@@ -199,22 +164,13 @@ class LogScheduleManager {
   async saveSchedule() {
     try {
       const {
-        scheduleStatusElement,
-        scheduleEnabledCheckbox,
         scheduleFrequencySelect,
         scheduleHourSelect,
         scheduleMinuteSelect,
         scheduleDayOfWeekSelect,
-        scheduleDayOfMonthSelect,
         saveScheduleButton,
-        scheduleDetailsElement,
-        scheduleStatusIcon
+        scheduleDetailsElement
       } = this.controller;
-      
-      if (scheduleStatusElement) {
-        scheduleStatusElement.textContent = "Saving schedule...";
-        scheduleStatusElement.className = "status-message";
-      }
       
       if (saveScheduleButton) {
         saveScheduleButton.disabled = true;
@@ -226,15 +182,9 @@ class LogScheduleManager {
       // Show loading indicator by calling directly on the controller
       this.controller.showLoading("Saving schedule...");
       
-      // Add loading icon
-      if (scheduleStatusIcon) {
-        scheduleStatusIcon.innerHTML = "⟳";
-        scheduleStatusIcon.className = "status-icon loading";
-      }
-      
-      // Build schedule object
+      // Build schedule object - always enabled
       const schedule = {
-        enabled: scheduleEnabledCheckbox ? scheduleEnabledCheckbox.checked : false,
+        enabled: true, // Always enabled now, ignoring the checkbox that was removed
         frequency: scheduleFrequencySelect ? scheduleFrequencySelect.value : 'daily',
         hour: scheduleHourSelect ? parseInt(scheduleHourSelect.value) : 0,
         minute: scheduleMinuteSelect ? parseInt(scheduleMinuteSelect.value) : 0
@@ -243,8 +193,6 @@ class LogScheduleManager {
       // Add frequency-specific values
       if (schedule.frequency === 'weekly') {
         schedule.dayOfWeek = scheduleDayOfWeekSelect ? parseInt(scheduleDayOfWeekSelect.value) : 0;
-      } else if (schedule.frequency === 'monthly') {
-        schedule.dayOfMonth = scheduleDayOfMonthSelect ? parseInt(scheduleDayOfMonthSelect.value) : 1;
       }
       
       // Save the schedule
@@ -259,16 +207,6 @@ class LogScheduleManager {
       }
       
       if (result.success) {
-        if (scheduleStatusElement) {
-          scheduleStatusElement.textContent = "Schedule saved successfully.";
-          scheduleStatusElement.className = "status-message success";
-        }
-        
-        if (scheduleStatusIcon) {
-          scheduleStatusIcon.innerHTML = "✓";
-          scheduleStatusIcon.className = "status-icon success";
-        }
-        
         // Update schedule details
         if (scheduleDetailsElement) {
           let detailsOutput = this.formatScheduleDetails(schedule);
@@ -288,10 +226,6 @@ class LogScheduleManager {
         
         // Verify that the schedule was set correctly
         setTimeout(async () => {
-          if (scheduleStatusElement) {
-            scheduleStatusElement.textContent = "Verifying schedule...";
-          }
-          
           // Get the current schedule from the system
           const verifyResult = await ipcRenderer.invoke('get-current-schedule');
           
@@ -305,10 +239,6 @@ class LogScheduleManager {
             if (scheduleDetailsElement) {
               scheduleDetailsElement.textContent = verificationOutput;
             }
-            
-            if (scheduleStatusElement) {
-              scheduleStatusElement.textContent = "Schedule verified and set successfully!";
-            }
           } else {
             // Add verification failure details
             let verificationOutput = scheduleDetailsElement.textContent;
@@ -320,23 +250,9 @@ class LogScheduleManager {
             if (scheduleDetailsElement) {
               scheduleDetailsElement.textContent = verificationOutput;
             }
-            
-            if (scheduleStatusElement) {
-              scheduleStatusElement.textContent = "Schedule may not be set correctly. Please check verification results.";
-            }
           }
         }, 1000); // Wait a second to ensure crontab has been updated
       } else {
-        if (scheduleStatusElement) {
-          scheduleStatusElement.textContent = result.message;
-          scheduleStatusElement.className = "status-message error";
-        }
-        
-        if (scheduleStatusIcon) {
-          scheduleStatusIcon.innerHTML = "✗";
-          scheduleStatusIcon.className = "status-icon error";
-        }
-        
         if (scheduleDetailsElement) {
           scheduleDetailsElement.textContent = "Failed to generate sync script: " + result.error;
         }
@@ -345,16 +261,9 @@ class LogScheduleManager {
       console.error('Error saving schedule:', error);
       
       const {
-        scheduleStatusElement,
-        scheduleStatusIcon,
         scheduleDetailsElement,
         saveScheduleButton
       } = this.controller;
-      
-      if (scheduleStatusElement) {
-        scheduleStatusElement.textContent = `Error: ${error.message}`;
-        scheduleStatusElement.className = "status-message error";
-      }
       
       if (saveScheduleButton) {
         saveScheduleButton.disabled = false;
@@ -363,11 +272,6 @@ class LogScheduleManager {
       // Reset the currentProvider and hide the loading indicator
       this.controller.currentProvider = null;
       this.controller.hideLoading();
-      
-      if (scheduleStatusIcon) {
-        scheduleStatusIcon.innerHTML = "✗";
-        scheduleStatusIcon.className = "status-icon error";
-      }
       
       if (scheduleDetailsElement) {
         scheduleDetailsElement.textContent = "Failed to save schedule: " + error.message;
@@ -495,42 +399,56 @@ class LogScheduleManager {
       logStatusElement.className = "status-message error";
     }
   }
-
+  
   /**
-   * Clean the logs
+   * Clear the current schedule
    */
-  async cleanLogs() {
+  async clearSchedule() {
     try {
-      const { logStatusElement } = this.controller;
+      const {
+        scheduleDetailsElement
+      } = this.controller;
       
-      if (logStatusElement) {
-        logStatusElement.textContent = "Cleaning logs...";
-        logStatusElement.className = "status-message";
+      // Set the context for schedule operations
+      this.controller.currentProvider = 'schedule';
+      
+      // Show loading indicator
+      this.controller.showLoading("Clearing schedule...");
+      
+      // Call the main process to completely remove the schedule from crontab
+      const result = await ipcRenderer.invoke('remove-schedule');
+      
+      // Hide loading indicator and reset currentProvider
+      this.controller.hideLoading();
+      this.controller.currentProvider = null;
+      
+      if (result.success) {
+        if (scheduleDetailsElement) {
+          scheduleDetailsElement.textContent = "No active schedule. Synchronization will need to be run manually.";
+        }
+      } else {
+        if (scheduleDetailsElement) {
+          scheduleDetailsElement.textContent = `Failed to clear schedule: ${result.message}`;
+        }
       }
-      
-      // Set the context for log operations
-      this.controller.currentProvider = 'logs';
-      
-      // Call showLoading directly on the controller
-      this.controller.showLoading("Cleaning logs...");
-      
-      // Send command to clean logs
-      ipcRenderer.send("clean-logs");
     } catch (error) {
-      console.error('Error cleaning logs:', error);
+      console.error('Error clearing schedule:', error);
       
-      const { logStatusElement } = this.controller;
+      const {
+        scheduleDetailsElement
+      } = this.controller;
       
-      if (logStatusElement) {
-        logStatusElement.textContent = `Error: ${error.message}`;
-        logStatusElement.className = "status-message error";
-      }
-      
-      // Reset the currentProvider and hide the loading indicator
+      // Reset the currentProvider and hide loading
       this.controller.currentProvider = null;
       this.controller.hideLoading();
+      
+      if (scheduleDetailsElement) {
+        scheduleDetailsElement.textContent = `Error clearing schedule: ${error.message}`;
+      }
     }
   }
+
+  // Removed execution log methods as requested
 }
 
 // Export the module

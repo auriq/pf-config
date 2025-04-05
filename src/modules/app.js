@@ -40,6 +40,35 @@ class CloudConfigApp {
     
     return this.mainWindow;
   }
+  
+  // Initialize the application and set up handlers
+  init() {
+    // Create the main window
+    this.createWindow();
+    
+    // Set up the schedule handler for saving schedules
+    this.setupScheduleHandler();
+    
+    // Set up app quit event handlers for cleanup
+    app.on('will-quit', async () => {
+      console.log("[INFO] Application quitting, cleaning up zombie rclone processes");
+      await this.cleanupZombieProcesses();
+    });
+    
+    // Handle graceful shutdown on SIGINT (Ctrl+C)
+    process.on('SIGINT', async () => {
+      console.log("[INFO] Received SIGINT, cleaning up and exiting");
+      await this.cleanupZombieProcesses();
+      app.quit();
+    });
+    
+    // Handle graceful shutdown on SIGTERM
+    process.on('SIGTERM', async () => {
+      console.log("[INFO] Received SIGTERM, cleaning up and exiting");
+      await this.cleanupZombieProcesses();
+      app.quit();
+    });
+  }
 
   // Check for and clean up zombie rclone processes before starting
   async checkForZombieProcesses() {
@@ -805,18 +834,15 @@ class CloudConfigApp {
           const cmd = `"${syncScriptPath}" -e -v`;
           console.log(`Executing sync command: ${cmd}`);
           
-          // Execute the command and capture output
-          const output = await new Promise((resolve, reject) => {
-            exec(cmd, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
-              if (error) {
-                console.error(`Sync execution error: ${error.message}`);
-                // Return the output even if there's an error, but mark as unsuccessful in the return object
-                resolve(`Error: ${error.message}\n\nOutput:\n${stdout}\n\nErrors:\n${stderr}`);
-                return;
-              }
-              resolve(stdout);
-            });
-          });
+          // Execute the command using our new executeCommand method that logs to exec_log.log
+          let output;
+          try {
+            output = await this.executeCommand(cmd, { maxBuffer: 10 * 1024 * 1024 });
+          } catch (error) {
+            console.error(`Sync execution error: ${error.message}`);
+            // Return the combined error message for the UI while still marking it as unsuccessful
+            output = `Error: ${error.message}\n\nPlease check the exec log for more details.`;
+          }
           
           // Clean up temp files
           try {
@@ -1058,6 +1084,168 @@ class CloudConfigApp {
           error: error.message
         });
       }
+    });
+  }
+  
+  // Handle save schedule request
+  setupScheduleHandler() {
+    ipcMain.handle('save-schedule', async (event, schedule) => {
+      try {
+        console.log('Saving schedule:', schedule);
+        
+        // Simple implementation that just stores the schedule in settings
+        this.configManager.setSettings({
+          ...this.configManager.getSettings(),
+          schedule: schedule
+        });
+        
+        // Generate a cron expression (simple implementation)
+        let cronExpression = '';
+        if (schedule.enabled) {
+          // Format: minute hour * * day-of-week
+          // For daily: minute hour * * *
+          // For weekly: minute hour * * day-of-week (0-6, Sunday=0)
+          // For monthly: minute hour day-of-month * *
+          
+          switch (schedule.frequency) {
+            case 'daily':
+              cronExpression = `${schedule.minute} ${schedule.hour} * * *`;
+              break;
+            case 'weekly':
+              cronExpression = `${schedule.minute} ${schedule.hour} * * ${schedule.dayOfWeek}`;
+              break;
+            case 'monthly':
+              cronExpression = `${schedule.minute} ${schedule.hour} ${schedule.dayOfMonth} * *`;
+              break;
+          }
+          
+          // Log the generated cron expression
+          console.log('Generated cron expression:', cronExpression);
+        }
+        
+        return {
+          success: true,
+          message: 'Schedule saved successfully',
+          cronExpression: cronExpression
+        };
+      } catch (error) {
+        console.error('Error saving schedule:', error);
+        return {
+          success: false,
+          message: `Failed to save schedule: ${error.message}`,
+          error: error.message
+        };
+      }
+    });
+  }
+  
+  /**
+   * Log a command execution to the exec_log.log file
+   * @param {string} command - The command being executed
+   * @param {string} stdout - The standard output of the command
+   * @param {string} stderr - The standard error output of the command
+   * @param {Error} error - Any error that occurred during execution
+   */
+  logCommandExecution(command, stdout = '', stderr = '', error = null) {
+    try {
+      const logPath = path.join(process.cwd(), 'logs');
+      const logFile = path.join(logPath, 'exec_log.log');
+      
+      // Create logs directory if it doesn't exist
+      if (!fs.existsSync(logPath)) {
+        fs.mkdirSync(logPath, { recursive: true });
+      }
+      
+      // Create the log file if it doesn't exist
+      if (!fs.existsSync(logFile)) {
+        fs.writeFileSync(logFile, '', 'utf8');
+      }
+      
+      // Check current log file size
+      const stats = fs.statSync(logFile);
+      const MAX_LOG_SIZE = 2 * 1024 * 1024; // 2MB
+      
+      // Format the log entry
+      const timestamp = new Date().toISOString();
+      let logEntry = `\n${'='.repeat(80)}\n`;
+      logEntry += `[${timestamp}] COMMAND: ${command}\n`;
+      logEntry += `${'='.repeat(80)}\n\n`;
+      
+      if (stdout) {
+        logEntry += `--- STDOUT ---\n${stdout}\n\n`;
+      }
+      
+      if (stderr) {
+        logEntry += `--- STDERR ---\n${stderr}\n\n`;
+      }
+      
+      if (error) {
+        logEntry += `--- ERROR ---\n${error.message}\n\n`;
+      }
+      
+      // If file exceeds size limit, trim it
+      if (stats.size + logEntry.length > MAX_LOG_SIZE) {
+        console.log(`Exec log file exceeds ${MAX_LOG_SIZE / (1024 * 1024)}MB, trimming...`);
+        
+        // Read the file content
+        let content = fs.readFileSync(logFile, 'utf8');
+        
+        // Calculate how much to keep (approximately half of the content)
+        const halfSize = Math.floor(content.length / 2);
+        
+        // Find a newline character after the halfway point to make a clean cut
+        let cutPoint = content.indexOf('\n', halfSize);
+        if (cutPoint === -1) cutPoint = halfSize; // Fallback if no newline found
+        
+        // Keep the second half of the file
+        content = content.substring(cutPoint);
+        
+        // Add a header indicating the file was trimmed
+        const trimHeader = `[LOG TRIMMED AT ${timestamp}]\n` +
+                          `Previous log entries were removed to keep file size under ${MAX_LOG_SIZE / (1024 * 1024)}MB\n` +
+                          `-------------------------------------------\n\n`;
+        
+        // Write the trimmed content and new log entry
+        fs.writeFileSync(logFile, trimHeader + content + logEntry);
+      } else {
+        // Append the log entry to the file
+        fs.appendFileSync(logFile, logEntry);
+      }
+    } catch (logError) {
+      console.error('Error writing to exec log:', logError);
+    }
+  }
+  
+  /**
+   * Execute a command and log it to exec_log.log
+   * @param {string} command - The command to execute
+   * @param {Object} options - Options for child_process.exec
+   * @returns {Promise<string>} - The stdout output of the command
+   */
+  async executeCommand(command, options = {}) {
+    return new Promise((resolve, reject) => {
+      console.log(`Executing command: ${command}`);
+      
+      const { exec } = require('child_process');
+      const process = exec(command, options, (error, stdout, stderr) => {
+        // Log the command execution
+        this.logCommandExecution(command, stdout, stderr, error);
+        
+        if (error) {
+          console.error(`Command failed: ${error.message}`);
+          reject(error);
+          return;
+        }
+        
+        if (stderr && stderr.includes('error')) {
+          const stderrError = new Error(stderr);
+          this.logCommandExecution(command, stdout, stderr, stderrError);
+          reject(stderrError);
+          return;
+        }
+        
+        resolve(stdout);
+      });
     });
   }
   
