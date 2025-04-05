@@ -158,6 +158,25 @@ class CloudConfigApp {
         app.quit();
       }
     });
+
+    // Add a signal handler for clean shutdown
+    process.on('SIGINT', async () => {
+      console.log("[INFO] Received SIGINT signal, cleaning up before exit");
+      await this.cleanupZombieProcesses();
+      process.exit(0);
+    });
+    
+    process.on('SIGTERM', async () => {
+      console.log("[INFO] Received SIGTERM signal, cleaning up before exit");
+      await this.cleanupZombieProcesses();
+      process.exit(0);
+    });
+    
+    // Clean up zombie rclone processes when quitting
+    app.on('will-quit', async () => {
+      console.log("[INFO] Application quitting, cleaning up zombie rclone processes");
+      await this.cleanupZombieProcesses();
+    });
     
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
@@ -167,8 +186,6 @@ class CloudConfigApp {
     
     app.on('ready', async () => {
       console.log("[INFO] Application started");
-      // Call checkForZombieProcesses before creating the window
-      await this.checkForZombieProcesses();
       this.createWindow();
       this.setupIPC();
     });
@@ -1044,6 +1061,42 @@ class CloudConfigApp {
     });
   }
   
+  // Simplified method to clean up rclone processes without asking for confirmation
+  async cleanupZombieProcesses() {
+    try {
+      const { execSync } = require('child_process');
+      const platform = process.platform;
+      
+      console.log("[INFO] Cleaning up rclone processes");
+      
+      if (platform === 'win32') {
+        try {
+          // Windows: Kill all rclone.exe processes
+          console.log("[INFO] Killing all rclone processes on Windows");
+          execSync('taskkill /F /IM rclone.exe', { stdio: 'ignore' });
+          console.log("[INFO] Successfully terminated Windows rclone processes");
+        } catch (error) {
+          // If no processes were found, this will error but that's ok
+          console.log("[INFO] No rclone processes found on Windows");
+        }
+      } else {
+        try {
+          // macOS/Linux: Use pkill for more reliable process termination
+          console.log("[INFO] Killing all rclone processes on macOS/Linux");
+          execSync('pkill -9 -f rclone', { stdio: 'ignore' });
+          console.log("[INFO] Successfully terminated macOS/Linux rclone processes");
+        } catch (error) {
+          // If no processes were found, pkill will return non-zero
+          console.log("[INFO] No rclone processes found on macOS/Linux");
+        }
+      }
+      
+      console.log("[INFO] Rclone process cleanup completed");
+    } catch (error) {
+      console.error('[ERROR] Error during rclone processes cleanup:', error);
+    }
+  }
+
   // Update the sync.sh script with current configuration
   async updateSyncScript() {
     // This method intentionally left as a stub for simplicity
