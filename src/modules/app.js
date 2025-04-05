@@ -261,6 +261,18 @@ class CloudConfigApp {
 
   // Set up all IPC handlers
   setupIPC() {
+    // Handle cleanup zombie rclone processes
+    ipcMain.on("cleanup-zombie-rclone", async (event) => {
+      try {
+        console.log("Killing zombie rclone processes before refreshing");
+        await this.cleanupZombieProcesses();
+        event.reply("cleanup-complete", { success: true });
+      } catch (error) {
+        console.error("Error cleaning up zombie rclone processes:", error);
+        event.reply("cleanup-complete", { success: false });
+      }
+    });
+
     // Handle list remotes request
     ipcMain.on("list-remotes", async (event) => {
       try {

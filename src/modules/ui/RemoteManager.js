@@ -173,13 +173,22 @@ class RemoteManager {
 
   /**
    * Refresh the list of remotes
+   * Also kills any zombie rclone processes
    */
   refreshRemotesList() {
     const { statusElement, reloadButton } = this.controller;
-    statusElement.textContent = "Loading remotes list...";
+    statusElement.textContent = "Cleaning up processes and loading remotes list...";
     reloadButton.disabled = true;
     this.controller.showLoading("Loading remotes...");
-    ipcRenderer.send("list-remotes");
+    
+    // Clean up zombie rclone processes first
+    ipcRenderer.send("cleanup-zombie-rclone");
+    
+    // Set up one-time listener for cleanup completion
+    ipcRenderer.once("cleanup-complete", () => {
+      // Now load the remotes list
+      ipcRenderer.send("list-remotes");
+    });
   }
 
   /**
