@@ -13,7 +13,14 @@ const { exec } = require('child_process');
  */
 function executeCommand(command) {
   return new Promise((resolve, reject) => {
-    exec(command, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+    // Windows needs special handling for certain commands
+    const options = {
+      maxBuffer: 10 * 1024 * 1024,
+      // Set shell to true for Windows to handle command syntax properly
+      shell: process.platform === 'win32' ? true : '/bin/bash'
+    };
+    
+    exec(command, options, (error, stdout, stderr) => {
       if (error) {
         reject(new Error(stderr || error.message));
         return;

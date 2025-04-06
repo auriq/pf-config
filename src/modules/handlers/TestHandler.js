@@ -8,7 +8,6 @@ const { exec, execSync } = require("child_process");
 const path = require("path");
 const os = require('os');
 const fs = require('fs-extra');
-const os = require('os');
 
 /**
  * Class to handle test-related IPC events

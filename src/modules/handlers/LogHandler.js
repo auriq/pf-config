@@ -3,10 +3,17 @@
  * Handles logs and scheduling-related IPC events
  */
 
-const { ipcMain } = require("electron");
+const { ipcMain, app } = require("electron");
 const path = require("path");
 const fs = require('fs-extra');
 const { exec } = require('child_process');
+
+// Get the application base path (works in both dev and production)
+const getAppBasePath = () => {
+  // In packaged app, use app.getAppPath()
+  // In development, use process.cwd()
+  return app.isPackaged ? app.getAppPath() : process.cwd();
+};
 
 /**
  * Class to handle logs and scheduling-related IPC events
@@ -79,7 +86,7 @@ class LogHandler {
     // Handle get sync log request
     ipcMain.on("get-sync-log", async (event) => {
       try {
-        const logPath = path.join(process.cwd(), 'logs', 'sync_detail.log');
+        const logPath = path.join(getAppBasePath(), 'logs', 'sync_detail.log');
         
         // Check if the log file exists
         if (!fs.existsSync(logPath)) {

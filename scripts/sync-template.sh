@@ -224,7 +224,13 @@ else
         
         # Set source path based on remote type
         # Check if there's a subfolder path set for this remote in the metadata file
-        METADATA_PATH="${HOME}/.config/pf-config/remotes-metadata.json"
+        if [ "$OS" = "Windows_NT" ]; then
+            # Windows path
+            METADATA_PATH="$USERPROFILE\\AppData\\Roaming\\pf-config\\remotes-metadata.json"
+        else
+            # Unix path
+            METADATA_PATH="${HOME}/.config/pf-config/remotes-metadata.json"
+        fi
         
         # Check if metadata file exists
         if [ -f "${METADATA_PATH}" ]; then

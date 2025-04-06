@@ -5,8 +5,17 @@
 
 const ConfigManager = require("./modules/config-manager");
 const os = require('os'); // Required for os.tmpdir()
+const { exec, execSync } = require('child_process'); // For process execution
+const { app } = require('electron');
 const CloudConfigApp = require("./modules/app");
 const { log } = require("./modules/utils");
+
+// Get the application base path (works in both dev and production)
+const getBasePath = () => {
+  // In packaged app, use app.getAppPath()
+  // In development, use process.cwd()
+  return app.isPackaged ? app.getAppPath() : process.cwd();
+};
 
 // Check if we're running in Electron context
 const isElectron = typeof process !== 'undefined' && 
@@ -90,8 +99,9 @@ async function main() {
           // Log the generated cron expression
           console.log('Generated cron expression:', cronExpression);
         
-        // Set up actual crontab entry for macOS/Linux systems
-        if (process.platform !== 'win32') { // Always set up crontab on non-Windows systems
+        // Set up scheduling based on platform
+        if (process.platform !== 'win32') {
+          // macOS/Linux: Use crontab for scheduling
           try {
             const { exec } = require('child_process');
             const fs = require('fs');
@@ -115,13 +125,26 @@ async function main() {
             // Remove any existing entries for our app
             const lines = currentCrontab.split('\n');
             const filteredLines = lines.filter(line => !line.includes('pf-config') && line.trim() !== '');
+            // Generate the sync.sh script for macOS/Linux using update-sync.js
+            const { spawn } = require('child_process');
+            console.log('Generating sync.sh script for macOS/Linux...');
             
-            // Get the sync script path
-            const syncScriptPath = path.join(process.cwd(), 'scripts', 'sync.sh');
+            try {
+              // Run the update-sync.js script to generate sync.sh
+              const updateSyncPath = path.join(getBasePath(), 'scripts', 'update-sync.js');
+              execSync(`node "${updateSyncPath}"`);
+              console.log('Successfully generated sync.sh script');
+            } catch (genError) {
+              console.error('Error generating sync.sh script:', genError);
+            }
+            
+            // Get the sync script path - this is for macOS/Linux only
+            const syncScriptPath = path.join(getBasePath(), 'scripts', 'sync.sh');
             
             // Create the new crontab entry
             // Format: minute hour * * day-of-week command
-            const command = `${syncScriptPath} -e > ${path.join(process.cwd(), 'logs', 'cron_output.log')} 2>&1`;
+            const logPath = path.join(process.cwd(), 'logs', 'cron_output.log');
+            const command = `${syncScriptPath} -e > ${logPath} 2>&1`;
             const cronLine = `${schedule.minute} ${schedule.hour} * * ${schedule.frequency === 'weekly' ? schedule.dayOfWeek : '*'} ${command} # PageFinder sync (pf-config)`;
             
             // Add our new entry
@@ -149,12 +172,87 @@ async function main() {
             console.error('Error setting crontab:', cronError);
             // Still return success since we saved the schedule in settings
           }
+        } else {
+          // Windows: Use Windows Task Scheduler
+          try {
+            // Use PowerShell to create a scheduled task
+            const { exec } = require('child_process');
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Generate the sync.bat script for Windows using update-sync.js
+            const { spawn } = require('child_process');
+            console.log('Generating sync.bat script for Windows...');
+            
+            try {
+              // Run the update-sync.js script to generate sync.bat
+              const updateSyncPath = path.join(getBasePath(), 'scripts', 'update-sync.js');
+              execSync(`node "${updateSyncPath}"`);
+              console.log('Successfully generated sync.bat script');
+            } catch (genError) {
+              console.error('Error generating sync.bat script:', genError);
+            }
+            
+            // Get the bat script path
+            const syncScriptPath = path.join(getBasePath(), 'scripts', 'sync.bat').replace(/\\/g, '\\\\');
+            
+            // Create the task name
+            const taskName = 'PageFinderSync';
+            
+            // PowerShell command to check if the task exists
+            const checkTaskCmd = `powershell -Command "& {if (Get-ScheduledTask -TaskName '${taskName}' -ErrorAction SilentlyContinue) { exit 1 } else { exit 0 }}"`;
+            
+            try {
+              // Check if task already exists
+              execSync(checkTaskCmd);
+              
+              // Task doesn't exist, create it
+              console.log('Creating new Windows scheduled task');
+            } catch (error) {
+              // Task exists, delete it first
+              console.log('Removing existing Windows scheduled task');
+              try {
+                execSync(`schtasks /Delete /TN "${taskName}" /F`);
+              } catch (delError) {
+                console.warn('Failed to delete existing task:', delError.message);
+              }
+            }
+            
+            // Build the trigger parameter based on schedule frequency
+            let triggerParam = '';
+            
+            switch(schedule.frequency) {
+              case 'daily':
+                triggerParam = `/SC DAILY /ST ${String(schedule.hour).padStart(2, '0')}:${String(schedule.minute).padStart(2, '0')}`;
+                break;
+              case 'weekly':
+                // Convert day of week (0-6) to Windows format (MON, TUE, etc.)
+                const daysOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+                const dayName = daysOfWeek[parseInt(schedule.dayOfWeek, 10)];
+                triggerParam = `/SC WEEKLY /D ${dayName} /ST ${String(schedule.hour).padStart(2, '0')}:${String(schedule.minute).padStart(2, '0')}`;
+                break;
+              case 'monthly':
+                triggerParam = `/SC MONTHLY /D ${schedule.dayOfMonth} /ST ${String(schedule.hour).padStart(2, '0')}:${String(schedule.minute).padStart(2, '0')}`;
+                break;
+            }
+            
+            // Create the scheduled task
+            // The /TR parameter specifies the program to run (our sync.bat script)
+            const createTaskCmd = `schtasks /Create /TN "${taskName}" ${triggerParam} /TR "${syncScriptPath} -e" /F`;
+            console.log('Creating Windows scheduled task with command:', createTaskCmd);
+            
+            execSync(createTaskCmd);
+            console.log('Windows scheduled task created successfully');
+          } catch (winError) {
+            console.error('Error setting up Windows scheduled task:', winError);
+            // Still return success since we saved the schedule in settings
+          }
         }
         
         return {
           success: true,
-          message: process.platform === 'win32' 
-            ? 'Schedule saved successfully (crontab not set on Windows)' 
+          message: process.platform === 'win32'
+            ? 'Schedule saved successfully (Windows Task Scheduler updated)'
             : 'Schedule saved successfully and crontab updated',
           cronExpression: cronExpression
         };
@@ -168,15 +266,42 @@ async function main() {
       }
     });
     
-    // Handler to remove schedule from crontab completely
+    // Handler to remove schedule completely
     ipcMain.handle('remove-schedule', async () => {
       try {
         if (process.platform === 'win32') {
-          // Not implemented for Windows
-          return {
-            success: true,
-            message: 'Schedule functionality not implemented for Windows'
-          };
+          // Windows implementation - remove the scheduled task
+          try {
+            const taskName = 'PageFinderSync';
+            
+            // PowerShell command to check if the task exists
+            const checkTaskCmd = `powershell -Command "& {if (Get-ScheduledTask -TaskName '${taskName}' -ErrorAction SilentlyContinue) { exit 1 } else { exit 0 }}"`;
+            
+            try {
+              // Check if task exists
+              execSync(checkTaskCmd);
+              // Task doesn't exist, nothing to remove
+              return {
+                success: true,
+                message: 'No scheduled task found to remove'
+              };
+            } catch (error) {
+              // Task exists, delete it
+              console.log('Removing Windows scheduled task');
+              execSync(`schtasks /Delete /TN "${taskName}" /F`);
+              return {
+                success: true,
+                message: 'Windows scheduled task has been removed'
+              };
+            }
+          } catch (winError) {
+            console.error('Error removing Windows scheduled task:', winError);
+            return {
+              success: false,
+              message: `Failed to remove Windows scheduled task: ${winError.message}`,
+              error: winError.message
+            };
+          }
         }
         
         const { exec } = require('child_process');

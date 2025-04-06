@@ -3,11 +3,13 @@
 /**
  * Script to update the sync.sh script with functionality to check for folders
  * in the destination that don't exist in the remotes list and delete them
+ * Updated to support both Windows and macOS/Linux
  */
 
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
+const os = require('os');
 const util = require('util');
 
 const execPromise = util.promisify(exec);
@@ -24,12 +26,33 @@ for (let i = 0; i < args.length; i++) {
 }
 
 // Configuration
-const CONFIG_DIR = path.join(process.env.HOME || process.env.USERPROFILE, '.config', 'pf-config');
+// Platform-specific config directory
+const CONFIG_DIR = process.platform === 'win32'
+  ? path.join(process.env.USERPROFILE, 'AppData', 'Roaming', 'pf-config')
+  : path.join(process.env.HOME || process.env.USERPROFILE, '.config', 'pf-config');
+
+// Config file paths
 let CLOUD_CONFIG_PATH = path.join(CONFIG_DIR, 'cloud.conf');
 let PF_CONFIG_PATH = path.join(CONFIG_DIR, 'pf.conf');
 let COMBINED_CONFIG_PATH = path.join(CONFIG_DIR, 'rclone.conf');
-const SYNC_SCRIPT_PATH = path.join(process.cwd(), 'scripts', 'sync.sh');
-const SYNC_TEMPLATE_PATH = path.join(process.cwd(), 'scripts', 'sync-template.sh');
+
+// Platform-specific script paths
+const isWindows = process.platform === 'win32';
+
+// Get the application base path, accounting for packaged vs development environment
+const getAppBasePath = () => {
+  // When running from electron-packaged app
+  if (process.resourcesPath) {
+    return process.resourcesPath;
+  }
+  
+  // When running during development
+  return process.cwd();
+};
+
+const appBasePath = getAppBasePath();
+const SYNC_SCRIPT_PATH = path.join(appBasePath, 'scripts', isWindows ? 'sync.bat' : 'sync.sh');
+const SYNC_TEMPLATE_PATH = path.join(appBasePath, 'scripts', isWindows ? 'sync-template.bat' : 'sync-template.sh');
 
 // If a config file was provided, use it
 let customConfig = null;
@@ -156,7 +179,7 @@ async function main() {
     newSyncScript = newSyncScript.replace(/{{DATE}}/g, new Date().toISOString());
     newSyncScript = newSyncScript.replace(/{{RCLONE_PATH}}/g, rclonePath);
     newSyncScript = newSyncScript.replace(/{{CONFIG_PATH}}/g, COMBINED_CONFIG_PATH);
-    newSyncScript = newSyncScript.replace(/{{LOG_DIR}}/g, path.join(process.cwd(), 'logs'));
+    newSyncScript = newSyncScript.replace(/{{LOG_DIR}}/g, path.join(appBasePath, 'logs'));
     newSyncScript = newSyncScript.replace(/{{PF_REMOTE_NAME}}/g, pfRemoteName);
     newSyncScript = newSyncScript.replace(/{{BUCKET_NAME}}/g, bucketName);
     newSyncScript = newSyncScript.replace(/{{CLOUD_REMOTES}}/g, cloudRemotes.join(' '));
@@ -235,11 +258,13 @@ async function main() {
 
     // Write the new sync script
     fs.writeFileSync(SYNC_SCRIPT_PATH, newSyncScript);
-    log(`Updated sync.sh script at: ${SYNC_SCRIPT_PATH}`);
+    log(`Updated sync script at: ${SYNC_SCRIPT_PATH}`);
 
-    // Make the script executable
-    fs.chmodSync(SYNC_SCRIPT_PATH, '755');
-    log('Made sync.sh script executable');
+    // Make the script executable (only needed for non-Windows platforms)
+    if (!isWindows) {
+      fs.chmodSync(SYNC_SCRIPT_PATH, '755');
+      log('Made sync script executable');
+    }
 
     log('Script completed successfully');
   } catch (error) {

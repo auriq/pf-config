@@ -24,7 +24,10 @@ class ConfigManager {
   // Get the app config directory path
   getAppConfigDir() {
     const userHome = process.env.HOME || process.env.USERPROFILE;
-    return path.join(userHome, '.config', 'pf-config');
+    // On Windows, use AppData\Roaming instead of .config
+    return process.platform === 'win32'
+      ? path.join(userHome, 'AppData', 'Roaming', 'pf-config')
+      : path.join(userHome, '.config', 'pf-config');
   }
 
   // Get the rclone config file path
@@ -197,17 +200,37 @@ class ConfigManager {
 
   // Get application settings
   getSettings() {
-    const DEFAULT_RCLONE_PATH = '/usr/local/bin/rclone';
+    // Platform-specific default rclone paths
+    const DEFAULT_RCLONE_PATH = process.platform === 'win32'
+      ? 'C:\\Program Files\\rclone\\rclone.exe'
+      : '/usr/local/bin/rclone';
     
     if (fs.existsSync(this.settingsPath)) {
       return JSON.parse(fs.readFileSync(this.settingsPath, 'utf8'));
     }
     
-    // Try default path first
+    // Try default path first based on platform
     if (fs.existsSync(DEFAULT_RCLONE_PATH)) {
       const settings = { rclonePath: DEFAULT_RCLONE_PATH };
       this.saveSettings(settings);
       return settings;
+    }
+    
+    // Try additional common paths for Windows
+    if (process.platform === 'win32') {
+      const windowsPaths = [
+        path.join(process.env.USERPROFILE, 'AppData', 'Local', 'rclone', 'rclone.exe'),
+        path.join(process.env.ProgramFiles, 'rclone', 'rclone.exe'),
+        path.join(process.env.ProgramFiles + ' (x86)', 'rclone', 'rclone.exe')
+      ];
+      
+      for (const rcPath of windowsPaths) {
+        if (fs.existsSync(rcPath)) {
+          const settings = { rclonePath: rcPath };
+          this.saveSettings(settings);
+          return settings;
+        }
+      }
     }
     
     return { rclonePath: '' };
