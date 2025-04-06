@@ -43,30 +43,51 @@ class CloudConfigApp {
   
   // Initialize the application and set up handlers
   init() {
-    // Create the main window
-    this.createWindow();
+    // Only create a window if one doesn't already exist (prevent duplicate windows)
+    if (!this.mainWindow) {
+      this.createWindow();
+    }
     
     // Set up the schedule handler for saving schedules
     this.setupScheduleHandler();
     
-    // Set up app quit event handlers for cleanup
-    app.on('will-quit', async () => {
-      console.log("[INFO] Application quitting, cleaning up zombie rclone processes");
-      await this.cleanupZombieProcesses();
-    });
-    
     // Handle graceful shutdown on SIGINT (Ctrl+C)
-    process.on('SIGINT', async () => {
-      console.log("[INFO] Received SIGINT, cleaning up and exiting");
-      await this.cleanupZombieProcesses();
+    process.on('SIGINT', () => {
+      console.log("[INFO] Received SIGINT, exiting");
       app.quit();
     });
     
     // Handle graceful shutdown on SIGTERM
-    process.on('SIGTERM', async () => {
-      console.log("[INFO] Received SIGTERM, cleaning up and exiting");
-      await this.cleanupZombieProcesses();
+    process.on('SIGTERM', () => {
+      console.log("[INFO] Received SIGTERM, exiting");
       app.quit();
+    });
+    
+    // Register app events
+    app.on('window-all-closed', () => {
+      if (process.platform !== 'darwin') {
+        app.quit();
+      }
+    });
+    
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        this.createWindow();
+      }
+    });
+    
+    app.on('ready', async () => {
+      console.log("[INFO] Application started");
+      // Don't create a window here, it's already created in main.js
+      this.setupIPC();
+    });
+    
+    // Setup IPC for app close with higher priority
+    ipcMain.removeAllListeners("close-app"); // Remove any existing handlers first
+    ipcMain.on("close-app", () => {
+      console.log("[INFO] Close application request received");
+      console.log("[INFO] Calling app.exit() to force quit");
+      app.exit(0); // Use app.exit(0) instead of app.quit() to force immediate exit
     });
   }
 
@@ -177,53 +198,7 @@ class CloudConfigApp {
     }
   }
 
-  // Initialize the application
-  init() {
-    console.log("[INFO] Application initialized");
-    
-    // Register app events
-    app.on('window-all-closed', () => {
-      if (process.platform !== 'darwin') {
-        app.quit();
-      }
-    });
-
-    // Add a signal handler for clean shutdown
-    process.on('SIGINT', async () => {
-      console.log("[INFO] Received SIGINT signal, cleaning up before exit");
-      await this.cleanupZombieProcesses();
-      process.exit(0);
-    });
-    
-    process.on('SIGTERM', async () => {
-      console.log("[INFO] Received SIGTERM signal, cleaning up before exit");
-      await this.cleanupZombieProcesses();
-      process.exit(0);
-    });
-    
-    // Clean up zombie rclone processes when quitting
-    app.on('will-quit', async () => {
-      console.log("[INFO] Application quitting, cleaning up zombie rclone processes");
-      await this.cleanupZombieProcesses();
-    });
-    
-    app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) {
-        this.createWindow();
-      }
-    });
-    
-    app.on('ready', async () => {
-      console.log("[INFO] Application started");
-      this.createWindow();
-      this.setupIPC();
-    });
-    
-    // Setup IPC for app close
-    ipcMain.on("close-app", () => {
-      app.quit();
-    });
-  }
+  // Removed duplicate init() method - consolidated into the single init() method above
 
   // Helper function to combine cloud.conf and pf.conf into rclone.conf
   async combinedRcloneConfig() {
@@ -261,17 +236,7 @@ class CloudConfigApp {
 
   // Set up all IPC handlers
   setupIPC() {
-    // Handle cleanup zombie rclone processes
-    ipcMain.on("cleanup-zombie-rclone", async (event) => {
-      try {
-        console.log("Killing zombie rclone processes before refreshing");
-        await this.cleanupZombieProcesses();
-        event.reply("cleanup-complete", { success: true });
-      } catch (error) {
-        console.error("Error cleaning up zombie rclone processes:", error);
-        event.reply("cleanup-complete", { success: false });
-      }
-    });
+    // Removed zombie process cleanup handler
 
     // Handle list remotes request
     ipcMain.on("list-remotes", async (event) => {
@@ -1261,41 +1226,7 @@ class CloudConfigApp {
     });
   }
   
-  // Simplified method to clean up rclone processes without asking for confirmation
-  async cleanupZombieProcesses() {
-    try {
-      const { execSync } = require('child_process');
-      const platform = process.platform;
-      
-      console.log("[INFO] Cleaning up rclone processes");
-      
-      if (platform === 'win32') {
-        try {
-          // Windows: Kill all rclone.exe processes
-          console.log("[INFO] Killing all rclone processes on Windows");
-          execSync('taskkill /F /IM rclone.exe', { stdio: 'ignore' });
-          console.log("[INFO] Successfully terminated Windows rclone processes");
-        } catch (error) {
-          // If no processes were found, this will error but that's ok
-          console.log("[INFO] No rclone processes found on Windows");
-        }
-      } else {
-        try {
-          // macOS/Linux: Use pkill for more reliable process termination
-          console.log("[INFO] Killing all rclone processes on macOS/Linux");
-          execSync('pkill -9 -f rclone', { stdio: 'ignore' });
-          console.log("[INFO] Successfully terminated macOS/Linux rclone processes");
-        } catch (error) {
-          // If no processes were found, pkill will return non-zero
-          console.log("[INFO] No rclone processes found on macOS/Linux");
-        }
-      }
-      
-      console.log("[INFO] Rclone process cleanup completed");
-    } catch (error) {
-      console.error('[ERROR] Error during rclone processes cleanup:', error);
-    }
-  }
+  // Removed cleanupZombieProcesses method
 
   // Update the sync.sh script with current configuration
   async updateSyncScript() {
