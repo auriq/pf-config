@@ -19,7 +19,8 @@
     "build:win": "node scripts/build-all.bat",
     "build:unix": "node scripts/build-all.sh",
     "build": "node -e \"require('child_process').spawn(process.platform === 'win32' ? 'scripts\\\\build-all.bat' : 'scripts/build-all.sh', [], {stdio: 'inherit', shell: true})\"",
-    "release": "./scripts/create-github-release.sh"
+    "release": "./scripts/create-github-release.sh",
+    "release:win": "./scripts/release-windows.sh"
   },
   "keywords": [
     "rclone",
@@ -108,10 +109,6 @@
         },
         {
           "target": "deb",
-          "arch": ["x64"]
-        },
-        {
-          "target": "rpm",
           "arch": ["x64"]
         }
       ],
