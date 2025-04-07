@@ -28,14 +28,15 @@ class CloudConfigApp {
     this.mainWindow.loadFile(path.join(__dirname, "..", "index.html"));
     
     // List remotes after window loads
-    this.mainWindow.webContents.on('did-finish-load', async () => {
-      try {
-        const remotes = await this.configManager.listRemotes();
-        const metadata = this.configManager.getAllRemotesMetadata();
-        this.mainWindow.webContents.send("remotes-list", { remotes, metadata });
-      } catch (error) {
-        console.error("Error listing remotes:", error);
-      }
+    this.mainWindow.webContents.on('did-finish-load', () => {
+      // Set a timeout to ensure UI doesn't hang
+      console.log('Window loaded, loading remotes with timeout protection');
+      
+      // Send initial UI ready message
+      this.mainWindow.webContents.send("ui-ready", { status: "ok" });
+      
+      // Load remotes with timeout protection
+      this.loadRemotesWithTimeout();
     });
     
     return this.mainWindow;
@@ -63,32 +64,11 @@ class CloudConfigApp {
       app.quit();
     });
     
-    // Register app events
-    app.on('window-all-closed', () => {
-      if (process.platform !== 'darwin') {
-        app.quit();
-      }
-    });
+    // We don't register app lifecycle events here anymore
+    // They are now handled in main.js to avoid duplication
     
-    app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) {
-        this.createWindow();
-      }
-    });
-    
-    app.on('ready', async () => {
-      console.log("[INFO] Application started");
-      // Don't create a window here, it's already created in main.js
-      this.setupIPC();
-    });
-    
-    // Setup IPC for app close with higher priority
-    ipcMain.removeAllListeners("close-app"); // Remove any existing handlers first
-    ipcMain.on("close-app", () => {
-      console.log("[INFO] Close application request received");
-      console.log("[INFO] Calling app.exit() to force quit");
-      app.exit(0); // Use app.exit(0) instead of app.quit() to force immediate exit
-    });
+    // Setup IPC handlers
+    this.setupIPC();
   }
 
   // Check for and clean up zombie rclone processes before starting
@@ -236,7 +216,13 @@ class CloudConfigApp {
 
   // Set up all IPC handlers
   setupIPC() {
-    // Removed zombie process cleanup handler
+    // Setup IPC for app close with higher priority
+    ipcMain.removeAllListeners("close-app"); // Remove any existing handlers first
+    ipcMain.on("close-app", () => {
+      console.log("[INFO] Close application request received");
+      console.log("[INFO] Calling app.exit() to force quit");
+      app.exit(0); // Use app.exit(0) instead of app.quit() to force immediate exit
+    });
 
     // Handle list remotes request
     ipcMain.on("list-remotes", async (event) => {
@@ -1233,6 +1219,72 @@ class CloudConfigApp {
     // This method intentionally left as a stub for simplicity
     console.log("Sync script update - functionality moved to handlers");
     return true;
+  }
+  
+  /**
+   * Load remotes with timeout protection to prevent UI hanging
+   * This method ensures the UI remains responsive even if remote loading fails
+   */
+  loadRemotesWithTimeout() {
+    console.log('Loading remotes with timeout protection');
+    
+    // Create a promise that resolves after timeout
+    const timeoutPromise = new Promise(resolve => {
+      setTimeout(() => {
+        console.log('Remote loading timed out');
+        resolve({ timedOut: true, remotes: [], metadata: {} });
+      }, 5000); // 5 second timeout
+    });
+    
+    // Create a promise for loading remotes
+    const loadPromise = new Promise(async (resolve) => {
+      try {
+        console.log('Starting remote loading');
+        const remotes = await this.configManager.listRemotes();
+        console.log(`Loaded ${remotes.length} remotes`);
+        const metadata = this.configManager.getAllRemotesMetadata();
+        resolve({ timedOut: false, remotes, metadata });
+      } catch (error) {
+        console.error('Error in loadRemotesWithTimeout:', error);
+        resolve({ timedOut: true, remotes: [], metadata: {} });
+      }
+    });
+    
+    // Race the promises
+    Promise.race([loadPromise, timeoutPromise])
+      .then(result => {
+        if (result.timedOut) {
+          console.log('Using timeout result for remotes');
+          // If we timed out, send an empty list to prevent UI hanging
+          if (this.mainWindow) {
+            this.mainWindow.webContents.send("remotes-list", {
+              remotes: [],
+              metadata: {},
+              error: "Loading timed out. Please check rclone configuration."
+            });
+          }
+        } else {
+          console.log('Using successful result for remotes');
+          // If we loaded successfully, send the actual data
+          if (this.mainWindow) {
+            this.mainWindow.webContents.send("remotes-list", {
+              remotes: result.remotes,
+              metadata: result.metadata
+            });
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Error in remote loading promise:', error);
+        // Send empty list on error
+        if (this.mainWindow) {
+          this.mainWindow.webContents.send("remotes-list", {
+            remotes: [],
+            metadata: {},
+            error: `Error: ${error.message}`
+          });
+        }
+      });
   }
 }
 

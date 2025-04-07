@@ -143,10 +143,36 @@ REM This section handles all sync operations after purge operations are complete
 if defined RCLONE_REMOTES (
     REM Process remotes from environment variable
     call :log "Processing remotes from environment variable..."
-    
-    REM This would need custom parsing of JSON in batch which is complex
-    REM For this example, we'll skip detailed implementation
-    call :log "NOTE: JSON parsing in batch script is limited. Using simplified approach."
+    REM Try to use PowerShell for JSON parsing if available
+    where /q powershell
+    if %ERRORLEVEL% equ 0 (
+        call :log "Using PowerShell to parse JSON remotes data"
+        
+        REM Create a temporary PowerShell script to parse the JSON
+        echo $remotes = $env:RCLONE_REMOTES ^| ConvertFrom-Json > "%TEMP%\parse_remotes.ps1"
+        echo foreach($remote in $remotes) { >> "%TEMP%\parse_remotes.ps1"
+        echo   Write-Host "REMOTE_NAME=$($remote.name)" >> "%TEMP%\parse_remotes.ps1"
+        echo   Write-Host "SOURCE=$($remote.source)" >> "%TEMP%\parse_remotes.ps1"
+        echo   Write-Host "DEST=$($remote.dest)" >> "%TEMP%\parse_remotes.ps1"
+        echo } >> "%TEMP%\parse_remotes.ps1"
+        
+        REM Execute the PowerShell script and process the output
+        for /f "tokens=*" %%a in ('powershell -ExecutionPolicy Bypass -File "%TEMP%\parse_remotes.ps1"') do (
+            set "%%a"
+            if defined REMOTE_NAME if defined SOURCE if defined DEST (
+                call :sync_remote "!REMOTE_NAME!" "!SOURCE!" "!DEST!"
+                set "REMOTE_NAME="
+                set "SOURCE="
+                set "DEST="
+            )
+        )
+        
+        REM Clean up temporary script
+        del "%TEMP%\parse_remotes.ps1"
+    ) else (
+        call :log "PowerShell not available. JSON parsing in batch script is limited."
+        call :log "Using simplified approach for remotes."
+    )
     
 ) else if defined RCLONE_SOURCE if defined RCLONE_DEST (
     REM Use environment variables for source and destination
@@ -170,12 +196,36 @@ if defined RCLONE_REMOTES (
         set "SUBFOLDER="
         
         if exist "!METADATA_PATH!" (
-            call :log "Metadata file found at !METADATA_PATH!, but parsing JSON requires external tools in batch"
-            call :log "Using default configuration for remote %%r"
+            where /q powershell
+            if %ERRORLEVEL% equ 0 (
+                call :log "Using PowerShell to parse metadata for remote %%r"
+                
+                REM Create a temporary PowerShell script to extract subfolder
+                echo $json = Get-Content -Raw "!METADATA_PATH!" ^| ConvertFrom-Json > "%TEMP%\parse_metadata.ps1"
+                echo if ($json.remotes.'%%r'.subfolder) { >> "%TEMP%\parse_metadata.ps1"
+                echo   Write-Host $json.remotes.'%%r'.subfolder >> "%TEMP%\parse_metadata.ps1"
+                echo } >> "%TEMP%\parse_metadata.ps1"
+                
+                REM Execute the PowerShell script and get the subfolder
+                for /f "tokens=*" %%s in ('powershell -ExecutionPolicy Bypass -File "%TEMP%\parse_metadata.ps1"') do (
+                    set "SUBFOLDER=%%s"
+                    call :log "Found subfolder in metadata for %%r: !SUBFOLDER!"
+                )
+                
+                REM Clean up temporary script
+                del "%TEMP%\parse_metadata.ps1"
+            ) else (
+                call :log "PowerShell not available. Using default configuration for remote %%r"
+            )
         )
         
-        REM Set source path (simplified)
-        set "SOURCE_PATH=%%r:"
+        REM Set source path based on subfolder and remote type
+        if defined SUBFOLDER (
+            call :log "Using subfolder !SUBFOLDER! for remote %%r"
+            set "SOURCE_PATH=%%r:!SUBFOLDER!"
+        ) else (
+            set "SOURCE_PATH=%%r:"
+        )
         
         REM Set destination path
         set "DEST_PATH=pf-user-2:asi-essentia-ai-new/user/pf-user-2/%%r"

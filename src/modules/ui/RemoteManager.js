@@ -222,15 +222,16 @@ class RemoteManager {
    * @param {Object} data - The data containing remotes and metadata
    */
   updateRemotesList(data) {
-    const { 
-      remoteListContainer, 
-      statusElement, 
+    const {
+      remoteListContainer,
+      statusElement,
       selectedRemote,
       reloadButton
     } = this.controller;
     
     let remotes = [];
     let metadata = {};
+    let error = null;
     
     // Handle both old format (array) and new format (object with remotes and metadata)
     if (Array.isArray(data)) {
@@ -238,10 +239,19 @@ class RemoteManager {
     } else if (data && data.remotes) {
       remotes = data.remotes;
       metadata = data.metadata || {};
+      error = data.error || null;
     }
     
     // Hide loading indicator
     this.controller.hideLoading();
+    
+    // Handle error case
+    if (error) {
+      statusElement.textContent = `Error loading remotes: ${error}`;
+      remoteListContainer.innerHTML = `<div class="no-remotes error">Error loading remotes: ${error}</div>`;
+      reloadButton.disabled = false;
+      return;
+    }
     
     // Create remotes list
     const remotesList = document.createElement("div");

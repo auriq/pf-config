@@ -5,14 +5,21 @@
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node scripts/test-platform.js",
+    "test:platform": "node scripts/test-platform.js",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
-    "dist:mac": "electron-builder --mac",
-    "dist:mac:signed": "electron-builder --mac && ./scripts/sign-mac-app.sh",
+    "dist:mac": "electron-builder --mac && node scripts/fix-mac-issues.js",
+    "dist:mac:signed": "electron-builder --mac && ./scripts/sign-mac-app.sh && node scripts/fix-mac-issues.js",
     "dist:win": "electron-builder --win",
     "dist:linux": "electron-builder --linux",
-    "dist:all": "electron-builder -mwl"
+    "dist:all": "electron-builder -mwl && node scripts/fix-mac-issues.js",
+    "fix:mac": "node scripts/fix-mac-issues.js",
+    "fix:permissions": "./scripts/fix-permissions.sh",
+    "build:win": "node scripts/build-all.bat",
+    "build:unix": "node scripts/build-all.sh",
+    "build": "node -e \"require('child_process').spawn(process.platform === 'win32' ? 'scripts\\\\build-all.bat' : 'scripts/build-all.sh', [], {stdio: 'inherit', shell: true})\"",
+    "release": "./scripts/create-github-release.sh"
   },
   "keywords": [
     "rclone",
@@ -27,12 +34,35 @@
   },
   "devDependencies": {
     "electron-builder": "^25.1.8",
-    "electron": "^28.2.0"
+    "electron": "^28.2.0",
+    "electron-notarize": "^1.2.2"
   },
   "build": {
     "appId": "com.pagefinder.config",
     "productName": "PageFinder Configuration",
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/fs-extra"
+    ],
+    "files": [
+      "**/*",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!**/node_modules/*.d.ts",
+      "!**/node_modules/.bin",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+      "!.editorconfig",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
+      "!**/{appveyor.yml,.travis.yml,circle.yml}",
+      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+    ],
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
     "mac": {
       "category": "public.app-category.utilities",
       "target": [
@@ -44,7 +74,18 @@
           "target": "zip",
           "arch": ["arm64", "x64"]
         }
-      ]
+      ],
+      "icon": "build/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "extendInfo": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        },
+        "NSRequiresAquaSystemAppearance": false
+      },
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.inherit.plist"
     },
     "win": {
       "target": [
@@ -56,7 +97,8 @@
           "target": "portable",
           "arch": ["x64"]
         }
-      ]
+      ],
+      "icon": "build/icon.ico"
     },
     "linux": {
       "target": [
@@ -67,8 +109,19 @@
         {
           "target": "deb",
           "arch": ["x64"]
+        },
+        {
+          "target": "rpm",
+          "arch": ["x64"]
         }
-      ]
+      ],
+      "icon": "build",
+      "category": "Utility",
+      "desktop": {
+        "Name": "PageFinder Configuration",
+        "Comment": "Configure cloud storage connections with PageFinder",
+        "Categories": "Utility;"
+      }
     },
     "nsis": {
       "oneClick": false,
@@ -81,8 +134,10 @@
       "artifactName": "${productName}-${version}-${os}-${arch}-portable.${ext}"
     },
     "dmg": {
-      "artifactName": "${productName}-${version}-${os}-${arch}-installer.${ext}"
+      "artifactName": "${productName}-${version}-${os}-${arch}-installer.${ext}",
+      "sign": false
     },
+    "afterSign": "scripts/notarize.js",
     "files": [
       "**/*",
       "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",

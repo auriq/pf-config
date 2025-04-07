@@ -23,11 +23,18 @@ class ConfigManager {
 
   // Get the app config directory path
   getAppConfigDir() {
-    const userHome = process.env.HOME || process.env.USERPROFILE;
-    // On Windows, use AppData\Roaming instead of .config
-    return process.platform === 'win32'
-      ? path.join(userHome, 'AppData', 'Roaming', 'pf-config')
-      : path.join(userHome, '.config', 'pf-config');
+    // Use the environment module to get the user data directory
+    try {
+      const env = require('../config/environment');
+      return env.USER_DATA_DIR;
+    } catch (error) {
+      console.error('Failed to load environment module, using fallback path');
+      const userHome = process.env.HOME || process.env.USERPROFILE;
+      // On Windows, use AppData\Roaming instead of .config
+      return process.platform === 'win32'
+        ? path.join(userHome, 'AppData', 'Roaming', 'pf-config')
+        : path.join(userHome, '.config', 'pf-config');
+    }
   }
 
   // Get the rclone config file path
@@ -200,10 +207,18 @@ class ConfigManager {
 
   // Get application settings
   getSettings() {
-    // Platform-specific default rclone paths
-    const DEFAULT_RCLONE_PATH = process.platform === 'win32'
-      ? 'C:\\Program Files\\rclone\\rclone.exe'
-      : '/usr/local/bin/rclone';
+    // Get platform-specific default rclone path from environment module
+    let DEFAULT_RCLONE_PATH;
+    try {
+      const env = require('../config/environment');
+      const platformConfig = env.getPlatformConfig();
+      DEFAULT_RCLONE_PATH = platformConfig.commonRclonePaths[0]; // Use first path as default
+    } catch (error) {
+      // Fallback if environment module is not available
+      DEFAULT_RCLONE_PATH = process.platform === 'win32'
+        ? 'C:\\Program Files\\rclone\\rclone.exe'
+        : '/usr/local/bin/rclone';
+    }
     
     if (fs.existsSync(this.settingsPath)) {
       return JSON.parse(fs.readFileSync(this.settingsPath, 'utf8'));
@@ -255,22 +270,52 @@ class ConfigManager {
     try {
       const settings = this.getSettings();
       if (!settings.rclonePath) {
-        throw new Error('Rclone path not configured');
+        console.warn('Rclone path not configured, returning empty remotes list');
+        return [];
       }
 
+      // Check if config file exists
+      if (!fs.existsSync(this.configPath)) {
+        console.warn(`Config file not found at ${this.configPath}, returning empty remotes list`);
+        return [];
+      }
+
+      // Add timeout to prevent hanging
       const output = await new Promise((resolve, reject) => {
-        exec(`"${settings.rclonePath}" --config "${this.configPath}" listremotes`, (error, stdout) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve(stdout);
+        // Create a timeout to prevent hanging
+        const timeoutId = setTimeout(() => {
+          console.error('Timeout while listing remotes');
+          resolve(''); // Resolve with empty string instead of rejecting
+        }, 5000); // 5 second timeout
+
+        const execProcess = exec(
+          `"${settings.rclonePath}" --config "${this.configPath}" listremotes`,
+          { timeout: 5000 }, // Add timeout option to exec
+          (error, stdout) => {
+            clearTimeout(timeoutId);
+            if (error) {
+              console.error(`Error executing rclone: ${error.message}`);
+              resolve(''); // Resolve with empty string instead of rejecting
+            } else {
+              resolve(stdout);
+            }
           }
+        );
+
+        // Handle process errors
+        execProcess.on('error', (err) => {
+          clearTimeout(timeoutId);
+          console.error(`Process error: ${err.message}`);
+          resolve('');
         });
       });
 
-      return output.trim().split('\n').map(remote => remote.replace(':', ''));
+      // Parse the output
+      const remotes = output.trim() ? output.trim().split('\n').map(remote => remote.replace(':', '')) : [];
+      console.log(`Found ${remotes.length} remotes`);
+      return remotes;
     } catch (error) {
-      console.error('Error listing remotes [Error details hidden]');
+      console.error(`Error listing remotes: ${error.message}`);
       return [];
     }
   }

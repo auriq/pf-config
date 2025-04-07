@@ -22,16 +22,22 @@ else
     SKIP_ICON_GENERATION=false
 fi
 
-# Create placeholder icon if it doesn't exist and ImageMagick is installed
-if [ ! -f "build/icon.png" ] && [ "$SKIP_ICON_GENERATION" = false ]; then
+# Create placeholder icon if it doesn't exist
+if [ ! -f "build/icon.png" ]; then
     echo "Creating placeholder icon..."
-    ./scripts/create-placeholder-icon.sh
+    node ./scripts/create-placeholder-icon.js
+    if [ $? -ne 0 ]; then
+        echo "WARNING: Failed to create placeholder icon."
+    fi
 fi
 
-# Generate icons for different platforms if ImageMagick is installed
-if [ -f "build/icon.png" ] && [ "$SKIP_ICON_GENERATION" = false ]; then
+# Generate icons for different platforms
+if [ -f "build/icon.png" ]; then
     echo "Generating icons for different platforms..."
-    ./scripts/generate-icons.sh
+    node ./scripts/generate-icons.js
+    if [ $? -ne 0 ]; then
+        echo "WARNING: Failed to generate platform-specific icons."
+    fi
 fi
 
 # Install dependencies

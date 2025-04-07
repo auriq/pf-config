@@ -95,6 +95,34 @@ if ! git diff-index --quiet HEAD --; then
     fi
 fi
 
+# Build the application for all platforms
+echo -e "${BLUE}Building the application for all platforms...${NC}"
+echo -e "${YELLOW}This may take a while. Do you want to continue? (y/n)${NC}"
+read -r answer
+if [[ "$answer" =~ ^[Yy]$ ]]; then
+    # Check if npm is installed
+    if ! command -v npm &> /dev/null; then
+        echo -e "${RED}Error: npm is not installed. Please install npm first.${NC}"
+        exit 1
+    fi
+    
+    # Install dependencies
+    echo -e "${BLUE}Installing dependencies...${NC}"
+    npm install
+    
+    # Build for all platforms
+    echo -e "${BLUE}Building for all platforms...${NC}"
+    npm run dist:all
+    
+    echo -e "${GREEN}Build completed.${NC}"
+    
+    # List the built artifacts
+    echo -e "${BLUE}Built artifacts:${NC}"
+    ls -la dist
+else
+    echo -e "${YELLOW}Skipping build step.${NC}"
+fi
+
 # Create a tag
 tag_name="v$release_version"
 echo -e "${BLUE}Creating tag: $tag_name...${NC}"
@@ -143,7 +171,23 @@ if [[ "$answer" =~ ^[Yy]$ ]]; then
     echo -e "${BLUE}1. Go to the releases page${NC}"
     echo -e "${BLUE}2. Edit the draft release${NC}"
     echo -e "${BLUE}3. Add release notes${NC}"
-    echo -e "${BLUE}4. Click 'Publish release'${NC}"
+    echo -e "${BLUE}4. Upload the built artifacts from the dist directory${NC}"
+    echo -e "${BLUE}5. Click 'Publish release'${NC}"
+    
+    echo -e "${YELLOW}Would you like to open the releases page now? (y/n)${NC}"
+    read -r answer
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
+        if command -v open &> /dev/null; then
+            open "https://github.com/$repo_url/releases"
+        elif command -v xdg-open &> /dev/null; then
+            xdg-open "https://github.com/$repo_url/releases"
+        elif command -v start &> /dev/null; then
+            start "https://github.com/$repo_url/releases"
+        else
+            echo -e "${YELLOW}Please visit:${NC}"
+            echo -e "${YELLOW}https://github.com/$repo_url/releases${NC}"
+        fi
+    fi
 else
     echo -e "${YELLOW}You can push the tag later with:${NC}"
     echo -e "${BLUE}git push origin $tag_name${NC}"

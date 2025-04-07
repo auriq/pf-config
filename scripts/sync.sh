@@ -2,7 +2,7 @@
 
 # Sync script for PageFinder
 # This script is generated automatically by the PageFinder Configuration tool
-# Generated on: 2025-04-06T18:41:16.600Z
+# Generated on: 2025-04-07T01:30:18.609Z
 
 # Set UTF-8 locale to handle double-byte characters correctly
 export LC_ALL=en_US.UTF-8
@@ -27,7 +27,7 @@ done
 
 # Configuration
 RCLONE_PATH="/usr/local/bin/rclone"
-CONFIG_PATH="/Users/koi/.config/pf-config/rclone.conf"
+CONFIG_PATH="/Users/koi/Library/Application Support/pf-config/rclone.conf"
 LOG_DIR="/Users/koi/work/pf-config/logs"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 LOG_FILE="${LOG_DIR}/sync_detail.log"
@@ -94,7 +94,7 @@ fi
 
 # Set up common variables
 DEST_PATH="pf-user-2:asi-essentia-ai-new/user/pf-user-2"
-CLOUD_REMOTES="koi gg g2"
+CLOUD_REMOTES="koi gg g4"
 
 # Function to purge a folder
 purge_folder() {

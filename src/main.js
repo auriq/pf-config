@@ -6,6 +6,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const fs = require('fs-extra');
 const path = require('path');
 const { exec } = require('child_process');
+const { runPostInstall } = require('./post-install');
 
 // Configure console logging first
 let terminal;
@@ -27,6 +28,24 @@ try {
 // Log application startup
 console.log('PageFinder Configuration application starting...');
 console.log(`Platform: ${process.platform}, Architecture: ${process.arch}`);
+
+// Ensure single instance of the app
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  console.log('Another instance is already running. Quitting this instance.');
+  app.quit();
+} else {
+  // This is the first instance - register second-instance handler
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    console.log('Second instance detected, focusing the main window');
+    // Someone tried to run a second instance, we should focus our window
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
 
 // Load environment module
 let env;
@@ -51,10 +70,17 @@ const ConfigManager = require("./modules/config-manager");
 let mainWindow = null;
 
 /**
- * Create the browser window - this function directly creates 
+ * Create the browser window - this function directly creates
  * the window without depending on other modules
  */
 function createWindow() {
+  // If window already exists, just focus it and return
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+    return mainWindow;
+  }
+
   console.log('Creating main window');
   
   // Create the browser window with basic settings
@@ -63,10 +89,15 @@ function createWindow() {
     height: 900,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      // Explicitly enable remote module for packaged app
+      enableRemoteModule: true
     },
     title: "PageFinder Configuration",
-    show: false // Don't show until ready
+    show: false, // Don't show until ready
+    // Add macOS specific settings
+    backgroundColor: '#ffffff',
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default'
   });
 
   // Load the index.html file
@@ -80,6 +111,11 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     console.log('Window content loaded, showing window');
     mainWindow.show();
+    // On macOS, bring the application to the foreground
+    if (process.platform === 'darwin') {
+      app.dock.show();
+      app.focus({ steal: true });
+    }
   });
   
   // Handle window closure
@@ -108,20 +144,26 @@ async function main() {
     const logsDir = path.join(process.cwd(), 'logs');
     fs.ensureDirSync(logsDir);
     
-    // Create the window first
-    mainWindow = createWindow();
-    
-    // Initialize the configuration manager (don't wait for it)
+    // Initialize the configuration manager first
     const configManager = new ConfigManager();
     console.log('Configuration manager initialized');
     
     // Initialize the application modules
     const CloudConfigApp = require("./modules/app");
     const cloudConfigApp = new CloudConfigApp(configManager);
+    
+    // Setup IPC before creating the window
+    cloudConfigApp.setupIPC();
+    console.log('IPC handlers set up');
+    
+    // Create the window after IPC is set up
+    mainWindow = createWindow();
     cloudConfigApp.mainWindow = mainWindow; // Pass the window reference
     
-    // Setup IPC directly instead of calling init() to avoid duplication
-    cloudConfigApp.setupIPC();
+    // Check for zombie processes on macOS
+    if (process.platform === 'darwin') {
+      await cloudConfigApp.checkForZombieProcesses();
+    }
     
     console.log('Application initialization complete');
     
@@ -153,6 +195,18 @@ process.on('uncaughtException', (err) => {
   }
 });
 
+// Handle macOS open-url events (for custom protocol handling)
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  console.log(`Received URL: ${url}`);
+  
+  // If app is already running, focus the window
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+  }
+});
+
 // When Electron is ready, start the app
 app.on('ready', () => {
   console.log('Electron ready event fired');
@@ -163,6 +217,26 @@ app.on('ready', () => {
     app.exit(0); // Force immediate exit
   });
   
+  // macOS-specific protocol handling setup
+  if (process.platform === 'darwin') {
+    // Register as handler for custom protocols (if any)
+    app.setAsDefaultProtocolClient('pf-config');
+    
+    // Run post-installation script on macOS
+    try {
+      // Check if post-install has already run
+      const markerPath = path.join(app.getPath('userData'), '.post-install-complete');
+      if (!fs.existsSync(markerPath)) {
+        console.log('Running post-installation script for first launch...');
+        runPostInstall();
+      } else {
+        console.log('Post-installation already completed.');
+      }
+    } catch (error) {
+      console.error('Error checking/running post-install:', error);
+    }
+  }
+  
   main().catch(error => {
     console.error('Failed to start application:', error);
   });
@@ -170,8 +244,15 @@ app.on('ready', () => {
 
 // Quit when all windows are closed
 app.on('window-all-closed', () => {
-  console.log('All windows closed, quitting app');
-  app.quit();
+  console.log('All windows closed');
+  // On macOS, it's common for applications to stay running
+  // even when all windows are closed
+  if (process.platform !== 'darwin') {
+    console.log('Non-macOS platform, quitting app');
+    app.quit();
+  } else {
+    console.log('macOS platform, app remains running');
+  }
 });
 
 // On macOS, re-create window when dock icon is clicked
@@ -179,6 +260,11 @@ app.on('activate', () => {
   console.log('App activated');
   if (mainWindow === null) {
     createWindow();
+  } else {
+    // If window exists but is minimized, restore it
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    // Focus the window to bring it to the front
+    mainWindow.focus();
   }
 });
 
