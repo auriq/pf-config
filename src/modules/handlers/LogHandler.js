@@ -42,6 +42,39 @@ class LogHandler {
      * @param {string} filePath - Path to the log file
      * @param {number} maxSize - Maximum size in bytes
      */
+    // Function to sanitize log content to remove any sensitive information
+    const sanitizeLogContent = (content) => {
+      if (!content) return '';
+      
+      // Patterns to detect sensitive information
+      const sensitivePatterns = [
+        // OAuth tokens
+        { pattern: /(ya29\.[0-9A-Za-z\-_]+)/g, replacement: "[OAUTH_TOKEN_REDACTED]" },
+        // Bearer tokens
+        { pattern: /(Bearer\s+[0-9A-Za-z\-_\.]+)/gi, replacement: "Bearer [TOKEN_REDACTED]" },
+        // Access and refresh tokens
+        { pattern: /(access_token|refresh_token|id_token)["']?\s*[:=]\s*["']([^"']+)["']/gi, replacement: "$1=\"[TOKEN_REDACTED]\"" },
+        // Common API key formats
+        { pattern: /(api[_-]?key|apikey|key|token)["']?\s*[:=]\s*["']([^"']{8,})["']/gi, replacement: "$1=\"[API_KEY_REDACTED]\"" },
+        // JWT tokens (common format: xxx.yyy.zzz)
+        { pattern: /eyJ[a-zA-Z0-9_-]{5,}\.[a-zA-Z0-9_-]{5,}\.[a-zA-Z0-9_-]{5,}/g, replacement: "[JWT_TOKEN_REDACTED]" },
+        // Any token-like parameter in URLs
+        { pattern: /([?&](?:token|access_token|auth)=)([^&\s]{8,})/g, replacement: "$1[TOKEN_REDACTED]" },
+        // Common OAuth response patterns
+        { pattern: /"token_type"\s*:\s*"[^"]+"\s*,\s*"access_token"\s*:\s*"[^"]+"/g, replacement: "\"token_type\":\"Bearer\",\"access_token\":\"[TOKEN_REDACTED]\"" },
+        // General long random strings that could be tokens (40+ chars)
+        { pattern: /([a-zA-Z0-9_\-\.=]{40,})/g, replacement: "[POSSIBLE_TOKEN_REDACTED]" }
+      ];
+      
+      // Apply all sanitization patterns
+      let sanitized = content;
+      for (const { pattern, replacement } of sensitivePatterns) {
+        sanitized = sanitized.replace(pattern, replacement);
+      }
+      
+      return sanitized;
+    };
+    
     const trimLogFileIfNeeded = (filePath) => {
       try {
         // Check if the file exists
@@ -84,38 +117,37 @@ class LogHandler {
       }
     };
     // Handle get sync log request
-    ipcMain.on("get-sync-log", async (event) => {
+    ipcMain.on("get-sync-log", (event) => {
       try {
-        const logPath = path.join(getAppBasePath(), 'logs', 'sync_detail.log');
+        // Use a hardcoded path to the logs directory
+        const logPath = path.join('/tmp/pf-config-temp/logs', 'terminal.log');
         
         // Check if the log file exists
         if (!fs.existsSync(logPath)) {
+          console.log(`Log file not found at: ${logPath}`);
           event.reply("sync-log-content", {
             success: false,
-            error: "Log file not found. No sync has been run yet."
+            error: "Log file not found. Please check the logs directory."
           });
           return;
         }
         
-        // Trim the log file if it exceeds the max size
-        trimLogFileIfNeeded(logPath);
+        console.log(`Reading log file from: ${logPath}`);
         
         // Read the log file
         const logContent = fs.readFileSync(logPath, 'utf8');
+        console.log(`Successfully read log file, size: ${logContent.length} bytes`);
         
-        // Sanitize the log content to remove any tokens or sensitive information
-        const sanitizedLogContent = this.app.sanitizeOutput(logContent);
-        
-        // Send the sanitized log content back to the renderer
+        // Send the log content back to the renderer
         event.reply("sync-log-content", {
           success: true,
-          content: sanitizedLogContent
+          content: logContent
         });
       } catch (error) {
-        console.error('Error reading sync log:', error);
+        console.error(`Error reading log file: ${error.message}`);
         event.reply("sync-log-content", {
           success: false,
-          error: error.message
+          error: `Error reading log file: ${error.message}`
         });
       }
     });

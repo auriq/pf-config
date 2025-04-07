@@ -97,7 +97,12 @@ function createWindow() {
     show: false, // Don't show until ready
     // Add macOS specific settings
     backgroundColor: '#ffffff',
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default'
+    // Use default titleBarStyle to ensure window is movable
+    titleBarStyle: 'default',
+    // Make sure the window is movable
+    movable: true,
+    frame: true,
+    resizable: true
   });
 
   // Load the index.html file
@@ -152,13 +157,17 @@ async function main() {
     const CloudConfigApp = require("./modules/app");
     const cloudConfigApp = new CloudConfigApp(configManager);
     
-    // Setup IPC before creating the window
+    // Create the window first
+    mainWindow = createWindow();
+    cloudConfigApp.mainWindow = mainWindow; // Pass the window reference
+    
+    // Setup IPC handlers
     cloudConfigApp.setupIPC();
     console.log('IPC handlers set up');
     
-    // Create the window after IPC is set up
-    mainWindow = createWindow();
-    cloudConfigApp.mainWindow = mainWindow; // Pass the window reference
+    // Initialize the app (sets up signal handlers, etc.)
+    cloudConfigApp.init();
+    console.log('CloudConfigApp initialized');
     
     // Check for zombie processes on macOS
     if (process.platform === 'darwin') {

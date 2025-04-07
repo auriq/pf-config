@@ -18,6 +18,7 @@ const util = require('util');
 // Constants
 const LOG_FILE_PATH = path.join(process.cwd(), 'logs', 'terminal.log');
 const MAX_HISTORY = 1000; // Store the last 1000 outputs
+const MAX_LOG_SIZE = 2 * 1024 * 1024; // 2MB max log file size
 
 // Ensure logs directory exists
 try {
@@ -82,9 +83,53 @@ function stripAnsi(str) {
   );
 }
 
+// Check and manage log file size
+function manageLogFileSize() {
+  try {
+    if (fs.existsSync(LOG_FILE_PATH)) {
+      const stats = fs.statSync(LOG_FILE_PATH);
+      
+      // If file exceeds max size, trim it
+      if (stats.size > MAX_LOG_SIZE) {
+        originalConsole.log(`Log file exceeds ${MAX_LOG_SIZE / (1024 * 1024)}MB, trimming...`);
+        
+        // Read the file content
+        let content = fs.readFileSync(LOG_FILE_PATH, 'utf8');
+        
+        // Calculate how much to keep (approximately half of the content)
+        const halfSize = Math.floor(content.length / 2);
+        
+        // Find a newline character after the halfway point to make a clean cut
+        let cutPoint = content.indexOf('\n', halfSize);
+        if (cutPoint === -1) cutPoint = halfSize; // Fallback if no newline found
+        
+        // Keep the second half of the file
+        content = content.substring(cutPoint);
+        
+        // Add a header indicating the file was trimmed
+        const trimHeader = `[LOG TRIMMED AT ${new Date().toISOString()}]\n` +
+                          `Previous log entries were removed to keep file size under ${MAX_LOG_SIZE / (1024 * 1024)}MB\n` +
+                          `-------------------------------------------\n\n`;
+        
+        // Write the trimmed content
+        fs.writeFileSync(LOG_FILE_PATH, trimHeader + content);
+        
+        return true;
+      }
+    }
+    return false;
+  } catch (error) {
+    originalConsole.error(`Failed to manage log file size: ${error.message}`);
+    return false;
+  }
+}
+
 // Append message to log file
 function appendToLogFile(level, message) {
   try {
+    // Check and manage log file size before appending
+    manageLogFileSize();
+    
     // Format the message
     const formattedMessage = `${timestamp()} [${level.toUpperCase()}] ${stripAnsi(message)}\n`;
     

@@ -70,26 +70,38 @@ function determineAppBaseDir() {
  */
 function determineUserDataDir() {
   try {
-    // Use Electron's user data directory when available
+    // On macOS and Linux, always use /tmp
+    if (!IS_WINDOWS) {
+      const userDataPath = path.join('/tmp', 'pf-config-temp');
+      console.log(`Using /tmp directory for userData: ${userDataPath}`);
+      return userDataPath;
+    }
+    
+    // On Windows, use Electron's temp directory when available
     if (app && app.getPath) {
-      const userDataPath = app.getPath('userData');
-      console.log(`Using Electron userData directory: ${userDataPath}`);
+      const tempPath = app.getPath('temp');
+      const userDataPath = path.join(tempPath, 'pf-config-temp');
+      console.log(`Using temporary directory for userData: ${userDataPath}`);
       return userDataPath;
     }
   } catch (error) {
-    console.log('Electron app.getPath not available, using platform-specific paths');
+    console.log('Electron app.getPath not available, using platform-specific temp paths');
   }
   
-  // Fall back to platform-specific locations
+  // Fall back to platform-specific temp locations
+  let tempDir;
   if (IS_WINDOWS) {
-    return path.join(HOME_DIR, 'AppData', 'Roaming', 'pf-config');
+    tempDir = process.env.TEMP || path.join(HOME_DIR, 'AppData', 'Local', 'Temp');
   } else {
-    return path.join(HOME_DIR, '.config', 'pf-config');
+    // Always use /tmp for macOS and Linux
+    tempDir = '/tmp';
   }
+  
+  return path.join(tempDir, 'pf-config-temp');
 }
 
 const USER_DATA_DIR = determineUserDataDir();
-console.log(`User data directory: ${USER_DATA_DIR}`);
+console.log(`Temporary user data directory: ${USER_DATA_DIR}`);
 
 /**
  * Platform-Specific Path Configurations
@@ -216,6 +228,14 @@ const PLATFORM_CONFIG = {
  */
 function ensureDirectories() {
   try {
+    // Create the directory if it doesn't exist, but don't clean it if it does
+    if (!fs.existsSync(PATHS.appConfig)) {
+      console.log(`Creating temporary directory: ${PATHS.appConfig}`);
+      fs.ensureDirSync(PATHS.appConfig);
+    } else {
+      console.log(`Using existing temporary directory: ${PATHS.appConfig}`);
+    }
+    
     // Ensure config directory exists
     fs.ensureDirSync(PATHS.appConfig);
     
@@ -231,9 +251,10 @@ function ensureDirectories() {
     // Ensure scripts directory exists
     fs.ensureDirSync(PATHS.scripts);
     
-    // Ensure temp directory exists (if not a system directory)
-    if (PATHS.temp.includes(HOME_DIR)) {
-      fs.ensureDirSync(PATHS.temp);
+    // Create a .gitignore file in the temp directory to prevent accidental commits
+    const gitignorePath = path.join(PATHS.appConfig, '.gitignore');
+    if (!fs.existsSync(gitignorePath)) {
+      fs.writeFileSync(gitignorePath, '*\n!.gitignore\n');
     }
     
     console.log('All required directories created successfully');
@@ -243,7 +264,11 @@ function ensureDirectories() {
     Object.entries(PATHS).forEach(([key, value]) => {
       console.log(`  ${key}: ${value}`);
     });
+    // We no longer clean up temp directories on app exit
+    // This allows persistent storage between app sessions
+    console.log('Temp directories will be preserved between app sessions');
     
+    return true;
     return true;
   } catch (error) {
     console.error('Failed to create required directories:', error.message);

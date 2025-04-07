@@ -472,6 +472,9 @@ class ConfigManager {
       const metadata = this.getRemoteMetadata(remoteName);
       console.log(`Remote metadata: [Metadata details hidden]`);
       
+      // Use the sync-handler module for testing
+      const syncHandler = require('./sync-handler');
+      
       const subfolder = metadata && metadata.subfolder ? metadata.subfolder : '';
       
       // Get all remotes to check if this is a local remote
@@ -559,6 +562,50 @@ class ConfigManager {
       }
       
       console.log('Processed directory listing complete');
+      
+      // Get the PageFinder remote name and bucket name
+      const pfConfigPath = path.join(this.appConfigDir, 'pf.conf');
+      let pfRemoteName = '';
+      
+      if (fs.existsSync(pfConfigPath)) {
+        const pfConfigContent = fs.readFileSync(pfConfigPath, 'utf8');
+        const remoteMatch = pfConfigContent.match(/\[([^\]]+)\]/);
+        if (remoteMatch) {
+          pfRemoteName = remoteMatch[1];
+        }
+      }
+      
+      // Combine configs for testing
+      const combinedConfigPath = path.join(this.appConfigDir, 'rclone.conf');
+      const cloudConfigPath = this.configPath;
+      
+      if (fs.existsSync(cloudConfigPath) && fs.existsSync(pfConfigPath)) {
+        const cloudConfig = fs.readFileSync(cloudConfigPath, 'utf8');
+        const pfConfig = fs.readFileSync(pfConfigPath, 'utf8');
+        fs.writeFileSync(combinedConfigPath, cloudConfig + '\n' + pfConfig);
+      }
+      
+      // Get settings for rclone path
+      const settings = this.getSettings();
+      
+      // Use the testSync function from sync-handler to check for orphan folders
+      if (pfRemoteName && settings.rclonePath) {
+        console.log('Running testSync to check for orphan folders...');
+        const testResult = await syncHandler.testSync({
+          rclonePath: settings.rclonePath,
+          combinedConfigPath: combinedConfigPath,
+          cloudRemotes: [remoteName],
+          pfRemoteName: pfRemoteName,
+          bucketName: 'asi-essentia-ai-new',
+          execute: false // Use dry-run mode
+        });
+        
+        // Add the testSync output to the topDirs
+        if (testResult.syncOutput) {
+          topDirs += "\n\n=== Orphan Folder Check ===\n";
+          topDirs += testResult.syncOutput;
+        }
+      }
       
       return {
         name: remoteName,
