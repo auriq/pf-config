@@ -21,10 +21,11 @@ const terminal = require('./terminal-output');
  * @param {Array<string>} options.cloudRemotes - Array of cloud remote names
  * @param {string} options.pfRemoteName - PageFinder remote name
  * @param {string} options.bucketName - Bucket name
+ * @param {Object} options.remoteMetadata - Metadata for remotes, including subfolder restrictions
  * @returns {Promise<Object>} - Result of the sync operation
  */
 async function testSync(options) {
-  const { rclonePath, combinedConfigPath, cloudRemotes, pfRemoteName, bucketName, execute = false } = options;
+  const { rclonePath, combinedConfigPath, cloudRemotes, pfRemoteName, bucketName, execute = false, remoteMetadata = {} } = options;
   
   if (execute) {
     terminal.log('Running sync with execution flag...');
@@ -58,7 +59,7 @@ async function testSync(options) {
         appendToOutput('Checking for orphan folders in destination (dry run)...');
       }
       
-      // Format the destination path
+      // Format the destination path (base path without remote name)
       const destPath = `${pfRemoteName}:${bucketName}/user/${pfRemoteName}`;
       
       // Build the command to list folders in the destination
@@ -179,17 +180,25 @@ async function testSync(options) {
     for (const remoteName of cloudRemotes) {
       terminal.log(`Testing sync for remote: ${remoteName}`);
       
+      // Check if this remote has subfolder restrictions
+      let subfolder = '';
+      if (remoteMetadata && remoteMetadata[remoteName] && remoteMetadata[remoteName].type === 'subfolder') {
+        subfolder = remoteMetadata[remoteName].subfolder || '';
+        terminal.log(`Using subfolder restriction for ${remoteName}: ${subfolder}`);
+      }
+      
       // Format the source and destination paths
-      const sourcePath = `${remoteName}:`;
-      const destPath = `${pfRemoteName}:${bucketName}/user/${pfRemoteName}`;
+      // If subfolder is specified, append it to the source path
+      const sourcePath = subfolder ? `${remoteName}:/${subfolder}` : `${remoteName}:`;
+      const destPath = `${pfRemoteName}:${bucketName}/user/${pfRemoteName}/${remoteName}`;
       
       // Build the command
       let syncCmd;
       if (execute) {
-        syncCmd = `"${rclonePath}" sync "${sourcePath}" "${destPath}" -P --config "${combinedConfigPath}"`;
+        syncCmd = `"${rclonePath}" sync "${sourcePath}" "${destPath}" --config "${combinedConfigPath}"`;
         terminal.log(`Executing sync command: ${syncCmd}`);
       } else {
-        syncCmd = `"${rclonePath}" sync "${sourcePath}" "${destPath}" --dry-run -P --config "${combinedConfigPath}"`;
+        syncCmd = `"${rclonePath}" sync "${sourcePath}" "${destPath}" --dry-run --config "${combinedConfigPath}"`;
         terminal.log(`Executing sync test command: ${syncCmd}`);
       }
       

@@ -14,15 +14,16 @@
 const fs = require('fs-extra');
 const path = require('path');
 const util = require('util');
+const env = require('../config/environment');
 
 // Constants
-const LOG_FILE_PATH = path.join(process.cwd(), 'logs', 'terminal.log');
+const LOG_FILE_PATH = path.join(env.PATHS.logs, 'terminal.log');
 const MAX_HISTORY = 1000; // Store the last 1000 outputs
 const MAX_LOG_SIZE = 2 * 1024 * 1024; // 2MB max log file size
 
 // Ensure logs directory exists
 try {
-  fs.ensureDirSync(path.join(process.cwd(), 'logs'));
+  fs.ensureDirSync(env.PATHS.logs);
 } catch (error) {
   console.error(`Failed to create logs directory: ${error.message}`);
 }

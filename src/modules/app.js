@@ -765,18 +765,18 @@ class CloudConfigApp {
             ...syncOptions,
             execute: true
           });
+// Extract the results
+const { success: syncWasSuccessful, message, syncOutput, error } = result;
 
-          // Extract the results
-          const { success: syncWasSuccessful, message, output } = result;
-          
-          // Check if there was an error in the sync operation
-          const wasSuccessful = !output.includes('Error:');
-          
-          return {
-            success: wasSuccessful,
-            message: wasSuccessful ? 'Sync operation completed' : 'Sync operation encountered issues',
-            output
-          };
+// Check if there was an error in the sync operation
+// Handle case where syncOutput might be undefined (error case)
+const wasSuccessful = syncWasSuccessful && (syncOutput ? !syncOutput.includes('Error:') : true);
+
+return {
+  success: wasSuccessful,
+  message: wasSuccessful ? 'Sync operation completed' : 'Sync operation encountered issues',
+  output: syncOutput || error || 'No output available'
+};
         } catch (syncError) {
           console.error('Error during sync execution:', syncError);
           
@@ -1183,6 +1183,80 @@ class CloudConfigApp {
  */
 const path = require('path');
 const fs = require('fs');
+
+// Set up console logging to terminal.log
+const setupConsoleLogging = () => {
+  const fs = require('fs');
+  const path = require('path');
+  const os = require('os');
+  
+  // Function to write to terminal.log
+  function writeToTerminalLog(message) {
+    try {
+      const logDir = path.join('${env.PATHS.logs.replace(/\\/g, '\\\\')}');
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+      }
+      
+      const logFile = path.join(logDir, 'terminal.log');
+      const timestamp = new Date().toISOString();
+      fs.appendFileSync(logFile, '[' + timestamp + '] ' + message + '\\n');
+    } catch (error) {
+      // Use original console to avoid infinite recursion
+      console.error('Error writing to terminal log:', error);
+    }
+  }
+  
+  // Store original console methods
+  const originalConsoleLog = console.log;
+  const originalConsoleError = console.error;
+  const originalConsoleWarn = console.warn;
+  
+  // Override console.log
+  console.log = function() {
+    const args = Array.from(arguments);
+    const message = args.map(arg =>
+      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+    ).join(' ');
+    
+    // Write to terminal.log
+    writeToTerminalLog(message);
+    
+    // Call original console.log
+    originalConsoleLog.apply(console, arguments);
+  };
+  
+  // Override console.error
+  console.error = function() {
+    const args = Array.from(arguments);
+    const message = 'ERROR: ' + args.map(arg =>
+      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+    ).join(' ');
+    
+    // Write to terminal.log
+    writeToTerminalLog(message);
+    
+    // Call original console.error
+    originalConsoleError.apply(console, arguments);
+  };
+  
+  // Override console.warn
+  console.warn = function() {
+    const args = Array.from(arguments);
+    const message = 'WARNING: ' + args.map(arg =>
+      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+    ).join(' ');
+    
+    // Write to terminal.log
+    writeToTerminalLog(message);
+    
+    // Call original console.warn
+    originalConsoleWarn.apply(console, arguments);
+  };
+};
+
+// Initialize console logging
+setupConsoleLogging();
 
 // Log start of sync
 console.log('Starting scheduled sync operation at ' + new Date().toISOString());
