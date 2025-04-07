@@ -126,9 +126,35 @@ fi
 
 # Create a tag
 tag_name="v$release_version"
-echo -e "${BLUE}Creating tag: $tag_name...${NC}"
-git tag -a "$tag_name" -m "Release $tag_name"
-echo -e "${GREEN}Tag created.${NC}"
+echo -e "${BLUE}Checking if tag $tag_name already exists...${NC}"
+if git rev-parse "$tag_name" >/dev/null 2>&1; then
+    echo -e "${YELLOW}Tag $tag_name already exists. Would you like to overwrite it? (y/n)${NC}"
+    read -r answer
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
+        echo -e "${BLUE}Deleting existing tag...${NC}"
+        git tag -d "$tag_name"
+        echo -e "${BLUE}Creating new tag: $tag_name...${NC}"
+        git tag -a "$tag_name" -m "Release $tag_name"
+        echo -e "${GREEN}Tag created.${NC}"
+    else
+        echo -e "${YELLOW}Would you like to specify a different tag name? (y/n)${NC}"
+        read -r answer
+        if [[ "$answer" =~ ^[Yy]$ ]]; then
+            echo -e "${YELLOW}Enter a new tag name (without the 'v' prefix):${NC}"
+            read -r new_version
+            tag_name="v$new_version"
+            echo -e "${BLUE}Creating tag: $tag_name...${NC}"
+            git tag -a "$tag_name" -m "Release $tag_name"
+            echo -e "${GREEN}Tag created.${NC}"
+        else
+            echo -e "${YELLOW}Skipping tag creation.${NC}"
+        fi
+    fi
+else
+    echo -e "${BLUE}Creating tag: $tag_name...${NC}"
+    git tag -a "$tag_name" -m "Release $tag_name"
+    echo -e "${GREEN}Tag created.${NC}"
+fi
 
 # Push to GitHub
 echo -e "${YELLOW}Would you like to push the tag to GitHub now? (y/n)${NC}"
