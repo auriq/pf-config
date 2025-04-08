@@ -10,9 +10,9 @@ const { exec } = require('child_process');
 
 // Get the application base path (works in both dev and production)
 const getAppBasePath = () => {
-  // In packaged app, use app.getAppPath()
-  // In development, use process.cwd()
-  return app.isPackaged ? app.getAppPath() : process.cwd();
+  // Use the app base directory from environment
+  const env = require('../../config/environment');
+  return env.PATHS.appBase;
 };
 
 /**
@@ -244,7 +244,8 @@ class LogHandler {
         }
         
         // Get the script path
-        const scriptPath = path.join(process.cwd(), 'scripts', 'sync.sh');
+        const env = require('../../config/environment');
+        const scriptPath = path.join(env.PATHS.scripts, 'sync.sh');
         
         // Check if the script exists
         const scriptExists = fs.existsSync(scriptPath);

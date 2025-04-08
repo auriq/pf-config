@@ -7,8 +7,9 @@ const fs = require('fs-extra');
 const path = require('path');
 
 // Set up logging
-const logFilePath = path.join(process.cwd(), 'logs', 'app-debug.log');
-fs.ensureDirSync(path.join(process.cwd(), 'logs'));
+const env = require('./config/environment');
+const logFilePath = path.join(env.PATHS.logs, 'app-debug.log');
+fs.ensureDirSync(env.PATHS.logs);
 fs.writeFileSync(logFilePath, `Debug log started at ${new Date().toISOString()}\n\n`);
 
 function log(message) {

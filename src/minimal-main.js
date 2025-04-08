@@ -7,8 +7,9 @@ const path = require('path');
 const fs = require('fs-extra');
 
 // Set up logging to file
-const logFilePath = path.join(process.cwd(), 'logs', 'app-debug.log');
-fs.ensureDirSync(path.join(process.cwd(), 'logs'));
+const env = require('./config/environment');
+const logFilePath = path.join(env.PATHS.logs, 'app-debug.log');
+fs.ensureDirSync(env.PATHS.logs);
 fs.writeFileSync(logFilePath, `Debug log started at ${new Date().toISOString()}\n\n`);
 
 /**
@@ -44,7 +45,7 @@ function createWindow() {
   // Log app paths for debugging
   log(`__dirname: ${__dirname}`);
   log(`App path: ${app.getAppPath()}`);
-  log(`Current working directory: ${process.cwd()}`);
+  log(`App base directory: ${env.PATHS.appBase}`);
   
   // Check if index.html exists
   const indexPath = path.join(__dirname, 'index.html');

@@ -28,9 +28,15 @@ const HOME_DIR = os.homedir();
  * @returns {boolean} True if running in development mode, false otherwise
  */
 function isDevelopmentMode() {
-  return process.env.NODE_ENV === 'development' || 
-         process.defaultApp || 
-         /[\\/]electron-prebuilt[\\/]/.test(process.execPath) || 
+  // If NODE_ENV is explicitly set to 'production', always use production mode
+  if (process.env.NODE_ENV === 'production') {
+    return false;
+  }
+  
+  // Otherwise, use the default checks
+  return process.env.NODE_ENV === 'development' ||
+         process.defaultApp ||
+         /[\\/]electron-prebuilt[\\/]/.test(process.execPath) ||
          /[\\/]electron[\\/]/.test(process.execPath);
 }
 
@@ -45,11 +51,20 @@ console.log(`Running in ${IS_DEV ? 'development' : 'production'} mode`);
  */
 function determineAppBaseDir() {
   try {
-    // For packaged app
+    // Check if we're in a packaged app
     if (!IS_DEV && app && app.getAppPath) {
-      const appPath = app.getAppPath();
-      console.log(`Production app directory: ${appPath}`);
-      return appPath;
+      // For production, we should use a consistent workspace directory
+      // First, try to use the workspace directory from an environment variable
+      if (process.env.PF_WORKSPACE_DIR) {
+        console.log(`Using workspace directory from environment: ${process.env.PF_WORKSPACE_DIR}`);
+        return process.env.PF_WORKSPACE_DIR;
+      }
+      
+      // If no environment variable is set, use a fixed path for consistency
+      // This ensures the app uses the same workspace in both dev and prod
+      const fixedWorkspace = '/Users/koi/work/pf-config';
+      console.log(`Using fixed workspace directory: ${fixedWorkspace}`);
+      return fixedWorkspace;
     }
   } catch (error) {
     console.log('Electron app object not available, using __dirname');
@@ -70,7 +85,7 @@ function determineAppBaseDir() {
  */
 function determineUserDataDir() {
   try {
-    // On macOS and Linux, always use /tmp
+    // On macOS and Linux, always use /tmp/pf-config-temp
     if (!IS_WINDOWS) {
       const userDataPath = path.join('/tmp', 'pf-config-temp');
       console.log(`Using /tmp directory for userData: ${userDataPath}`);

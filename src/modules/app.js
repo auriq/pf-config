@@ -309,12 +309,27 @@ class CloudConfigApp {
     // Handle list remotes request
     ipcMain.on("list-remotes", async (event) => {
       try {
-        const remotes = await this.configManager.listRemotes();
+        const remotesResult = await this.configManager.listRemotes();
         const metadata = this.configManager.getAllRemotesMetadata();
-        event.reply("remotes-list", { remotes, metadata });
+        
+        console.log(`[REMOTES_DEBUG] Got remotes result:`, remotesResult);
+        
+        // Extract the remotes array from the result object
+        // The ConfigManager returns { remotes: [...], error: null }
+        const remotesList = remotesResult.remotes || [];
+        const error = remotesResult.error || null;
+        
+        console.log(`[REMOTES_DEBUG] Extracted ${remotesList.length} remotes:`, remotesList);
+        
+        // Send the properly structured data to the renderer
+        event.reply("remotes-list", {
+          remotes: remotesList,
+          metadata,
+          error
+        });
       } catch (error) {
         console.error("Error listing remotes:", error);
-        event.reply("remotes-list", { remotes: [], metadata: {} });
+        event.reply("remotes-list", { remotes: [], metadata: {}, error: error.message });
       }
     });
 
@@ -603,7 +618,12 @@ class CloudConfigApp {
         let remoteNames = [];
         if (Array.isArray(cloudRemotes)) {
           remoteNames = cloudRemotes;
+        } else if (cloudRemotes && typeof cloudRemotes === 'object' && Array.isArray(cloudRemotes.remotes)) {
+          // Handle case where cloudRemotes is the direct result of configManager.listRemotes()
+          remoteNames = cloudRemotes.remotes;
         } else if (typeof cloudRemotes === 'object') {
+          // This is a fallback, but should not normally be used
+          console.warn('Warning: Unexpected format for cloudRemotes, using Object.keys as fallback');
           remoteNames = Object.keys(cloudRemotes);
         }
         
@@ -729,7 +749,12 @@ class CloudConfigApp {
         let remoteNames = [];
         if (Array.isArray(cloudRemotes)) {
           remoteNames = cloudRemotes;
+        } else if (cloudRemotes && typeof cloudRemotes === 'object' && Array.isArray(cloudRemotes.remotes)) {
+          // Handle case where cloudRemotes is the direct result of configManager.listRemotes()
+          remoteNames = cloudRemotes.remotes;
         } else if (typeof cloudRemotes === 'object') {
+          // This is a fallback, but should not normally be used
+          console.warn('Warning: Unexpected format for cloudRemotes, using Object.keys as fallback');
           remoteNames = Object.keys(cloudRemotes);
         }
         
@@ -1262,7 +1287,7 @@ setupConsoleLogging();
 console.log('Starting scheduled sync operation at ' + new Date().toISOString());
 
 // Import the sync-handler module directly
-const syncHandlerPath = '${path.join(process.cwd(), 'src', 'modules', 'sync-handler').replace(/\\/g, '\\\\')}';
+const syncHandlerPath = '${path.join(env.PATHS.appBase, 'src', 'modules', 'sync-handler').replace(/\\/g, '\\\\')}';
 console.log('Loading sync-handler module from:', syncHandlerPath);
 const syncHandler = require(syncHandlerPath);
 
@@ -1337,6 +1362,7 @@ const syncOptions = {
   cloudRemotes: cloudRemotes,
   pfRemoteName: pfRemoteName,
   bucketName: 'asi-essentia-ai-new',
+  foldersToDelete: [], // Add foldersToDelete parameter
   remoteMetadata: metadata.remotes || {},
   execute: true // Set execute flag to true for scheduled runs
 };
@@ -1348,8 +1374,22 @@ console.log('Executing sync with options:', JSON.stringify(syncOptions, null, 2)
 // but with execute=true to run without the dry-run flag
 syncHandler.testSync(syncOptions)
   .then(result => {
-    console.log('Scheduled sync completed with result:', JSON.stringify(result, null, 2));
-    process.exit(result.success ? 0 : 1);
+    // Extract the results
+    const { success: syncWasSuccessful, message, syncOutput, error } = result;
+    
+    // Check if there was an error in the sync operation
+    // Handle case where syncOutput might be undefined (error case)
+    const wasSuccessful = syncWasSuccessful && (syncOutput ? !syncOutput.includes('Error:') : true);
+    
+    // Log the result
+    console.log('Scheduled sync completed with result:', {
+      success: wasSuccessful,
+      message: wasSuccessful ? 'Sync operation completed' : 'Sync operation encountered issues',
+      output: syncOutput || error || 'No output available'
+    });
+    
+    // Exit with appropriate code
+    process.exit(wasSuccessful ? 0 : 1);
   })
   .catch(error => {
     console.error('Scheduled sync failed:', error);
@@ -1366,6 +1406,10 @@ syncHandler.testSync(syncOptions)
         // Make the script executable on Unix-like systems
         if (!isWindows) {
           fs.chmodSync(syncJsPath, '755');
+          
+          // Also ensure the log directory exists and has correct permissions
+          fs.ensureDirSync(env.PATHS.logs);
+          fs.chmodSync(env.PATHS.logs, '755');
         }
         
         // Get the Node.js executable path
@@ -1456,7 +1500,9 @@ syncHandler.testSync(syncOptions)
           });
           
           // Add our new cron job - ensure there's exactly one newline before adding
-          const cronJob = `\n${schedule.minute} ${schedule.hour} * * ${schedule.frequency === 'weekly' ? schedule.dayOfWeek : '*'} ${nodePath} "${syncJsPath}" # PageFinder Sync Job`;
+          // Include environment variables and use full paths
+          const homeDir = process.env.HOME || process.env.USERPROFILE;
+          const cronJob = `\n${schedule.minute} ${schedule.hour} * * ${schedule.frequency === 'weekly' ? schedule.dayOfWeek : '*'} cd "${env.PATHS.appBase}" && HOME="${homeDir}" PATH="/usr/local/bin:/usr/bin:/bin:$PATH" "${nodePath}" "${syncJsPath}" >> "${env.PATHS.logs}/cron-sync.log" 2>&1 # PageFinder Sync Job`;
           fs.appendFileSync(tempCronFile, cronJob);
           
           // Install the new crontab
@@ -1573,7 +1619,7 @@ syncHandler.testSync(syncOptions)
    */
   logCommandExecution(command, stdout = '', stderr = '', error = null) {
     try {
-      const logPath = path.join(process.cwd(), 'logs');
+      const logPath = env.PATHS.logs;
       const logFile = path.join(logPath, 'exec_log.log');
       
       // Create logs directory if it doesn't exist
@@ -1687,65 +1733,95 @@ async updateSyncScript() {
    * This method ensures the UI remains responsive even if remote loading fails
    */
   loadRemotesWithTimeout() {
-    console.log('Loading remotes with timeout protection');
+    console.log('Loading remotes with direct error handling');
     
-    // Create a promise that resolves after timeout
-    const timeoutPromise = new Promise(resolve => {
-      setTimeout(() => {
-        console.log('Remote loading timed out');
-        resolve({ timedOut: true, remotes: [], metadata: {} });
-      }, 5000); // 5 second timeout
-    });
-    
-    // Create a promise for loading remotes
-    const loadPromise = new Promise(async (resolve) => {
+    // Create a promise for loading remotes - no timeout race needed anymore
+    const loadRemotesPromise = async () => {
       try {
-        console.log('Starting remote loading');
-        const remotes = await this.configManager.listRemotes();
-        console.log(`Loaded ${remotes.length} remotes`);
-        const metadata = this.configManager.getAllRemotesMetadata();
-        resolve({ timedOut: false, remotes, metadata });
-      } catch (error) {
-        console.error('Error in loadRemotesWithTimeout:', error);
-        resolve({ timedOut: true, remotes: [], metadata: {} });
-      }
-    });
-    
-    // Race the promises
-    Promise.race([loadPromise, timeoutPromise])
-      .then(result => {
-        if (result.timedOut) {
-          console.log('Using timeout result for remotes');
-          // If we timed out, send an empty list to prevent UI hanging
+        console.log('Starting remote loading process');
+        
+        // Get the result from the improved listRemotes method
+        const result = await this.configManager.listRemotes();
+        console.log(`Remote loading completed: ${result.remotes.length} remotes found`);
+        
+        if (result.error) {
+          console.error(`Remote loading error: ${result.error}`);
+          
+          // Show a specific error dialog based on the error type
           if (this.mainWindow) {
+            let title = 'Remote Loading Error';
+            let message = 'Error loading remotes';
+            let detail = result.error;
+            
+            // Customize message based on error type
+            if (result.error.includes('OAuth authentication required')) {
+              title = 'Authentication Required';
+              message = 'OAuth Authentication Required';
+              detail = 'You need to authenticate with your cloud provider first. Please run rclone config in a terminal to complete the authentication process.';
+            } else if (result.error.includes('not found')) {
+              title = 'Configuration Error';
+              message = 'Rclone Not Found';
+              detail = `${result.error}\n\nPlease install rclone or set the correct path in settings.`;
+            } else if (result.error.includes('permissions')) {
+              title = 'Permission Error';
+              message = 'Rclone Permission Issue';
+              detail = `${result.error}\n\nPlease fix the permissions for rclone or the config file.`;
+            }
+            
+            // Show the error dialog
+            const { dialog } = require('electron');
+            dialog.showMessageBox(this.mainWindow, {
+              type: 'error',
+              title: title,
+              message: message,
+              detail: detail,
+              buttons: ['OK']
+            });
+            
+            // Send the error to the renderer
             this.mainWindow.webContents.send("remotes-list", {
               remotes: [],
               metadata: {},
-              error: "Loading timed out. Please check rclone configuration."
+              error: result.error
             });
           }
-        } else {
-          console.log('Using successful result for remotes');
-          // If we loaded successfully, send the actual data
-          if (this.mainWindow) {
-            this.mainWindow.webContents.send("remotes-list", {
-              remotes: result.remotes,
-              metadata: result.metadata
-            });
-          }
+          return;
         }
-      })
-      .catch(error => {
-        console.error('Error in remote loading promise:', error);
-        // Send empty list on error
+        
+        // If successful, get metadata and send to renderer
+        const metadata = this.configManager.getAllRemotesMetadata();
+        
         if (this.mainWindow) {
+          this.mainWindow.webContents.send("remotes-list", {
+            remotes: result.remotes,
+            metadata: metadata
+          });
+        }
+      } catch (error) {
+        console.error('Unexpected error in loadRemotesWithTimeout:', error);
+        
+        if (this.mainWindow) {
+          // Show a generic error dialog for unexpected errors
+          const { dialog } = require('electron');
+          dialog.showMessageBox(this.mainWindow, {
+            type: 'error',
+            title: 'Unexpected Error',
+            message: 'An unexpected error occurred',
+            detail: `Error: ${error.message || 'Unknown error'}\n\nPlease check the application logs for more details.`,
+            buttons: ['OK']
+          });
+          
           this.mainWindow.webContents.send("remotes-list", {
             remotes: [],
             metadata: {},
-            error: `Error: ${error.message}`
+            error: `Unexpected error: ${error.message || 'Unknown error'}`
           });
         }
-      });
+      }
+    };
+    
+    // Execute the promise immediately
+    loadRemotesPromise();
   }
 }
 

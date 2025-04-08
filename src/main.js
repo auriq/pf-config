@@ -146,8 +146,15 @@ async function main() {
     console.log('Initializing application');
     
     // Create directories if they don't exist
-    const logsDir = path.join(process.cwd(), 'logs');
-    fs.ensureDirSync(logsDir);
+    // Use the paths defined in environment.js
+    console.log(`Using environment paths for directories`);
+    console.log(`Logs directory: ${env.PATHS.logs}`);
+    
+    // Ensure all required directories exist
+    fs.ensureDirSync(env.PATHS.logs);
+    fs.ensureDirSync(env.PATHS.data);
+    fs.ensureDirSync(env.PATHS.scripts);
+    fs.ensureDirSync(env.PATHS.backup);
     
     // Initialize the configuration manager first
     const configManager = new ConfigManager();

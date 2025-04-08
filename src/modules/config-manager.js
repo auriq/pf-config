@@ -23,10 +23,21 @@ class ConfigManager {
 
   // Get the app config directory path
   getAppConfigDir() {
-    // Use the environment module to get the user data directory
+    // Use the environment module to get the app config directory
     try {
       const env = require('../config/environment');
-      return env.USER_DATA_DIR;
+      
+      // Use the app config directory for config files
+      // This ensures we use the same config files in development and production
+      console.log(`[CONFIG_DEBUG] Using app config directory for config: ${env.PATHS.appConfig}`);
+      
+      // Log the environment mode
+      console.log(`[CONFIG_DEBUG] Running in ${env.IS_DEV ? 'development' : 'production'} mode`);
+      
+      // Log the USER_DATA_DIR
+      console.log(`[CONFIG_DEBUG] USER_DATA_DIR: ${env.USER_DATA_DIR}`);
+      
+      return env.PATHS.appConfig;
     } catch (error) {
       console.error('Failed to load environment module, using fallback path');
       const userHome = process.env.HOME || process.env.USERPROFILE;
@@ -36,11 +47,43 @@ class ConfigManager {
         : path.join(userHome, '.config', 'pf-config');
     }
   }
-
-  // Get the rclone config file path
-  getRcloneConfigPath() {
-    return path.join(this.appConfigDir, 'cloud.conf');
+// Get the rclone config file path
+getRcloneConfigPath() {
+  const configPath = path.join(this.appConfigDir, 'cloud.conf');
+  console.log(`[CONFIG_DEBUG] Using rclone config path: ${configPath}`);
+  
+  // Check if the file exists
+  try {
+    const fs = require('fs-extra');
+    const exists = fs.existsSync(configPath);
+    console.log(`[CONFIG_DEBUG] Config file exists: ${exists}`);
+    
+    if (exists) {
+      // Try to read the file to make sure it's accessible
+      try {
+        const content = fs.readFileSync(configPath, 'utf8');
+        console.log(`[CONFIG_DEBUG] Successfully read config file, content length: ${content.length} bytes`);
+      } catch (readError) {
+        console.error(`[CONFIG_DEBUG] Error reading config file: ${readError.message}`);
+      }
+    } else {
+      // Log the directory contents
+      try {
+        console.log(`[CONFIG_DEBUG] Listing directory contents of: ${this.appConfigDir}`);
+        const files = fs.readdirSync(this.appConfigDir);
+        files.forEach(file => {
+          console.log(`[CONFIG_DEBUG] - ${file}`);
+        });
+      } catch (dirError) {
+        console.error(`[CONFIG_DEBUG] Error listing directory: ${dirError.message}`);
+      }
+    }
+  } catch (error) {
+    console.error(`[CONFIG_DEBUG] Error checking config file: ${error.message}`);
   }
+  
+  return configPath;
+}
 
   // Get the app settings file path
   getSettingsPath() {
@@ -268,55 +311,185 @@ class ConfigManager {
   // List configured remotes
   async listRemotes() {
     try {
+      console.log('[REMOTES_DEBUG] Starting listRemotes method');
+      console.log(`[REMOTES_DEBUG] Config file path: ${this.configPath}`);
+      
+      // Check if config file exists and log its content
+      if (fs.existsSync(this.configPath)) {
+        const configContent = fs.readFileSync(this.configPath, 'utf8');
+        console.log(`[REMOTES_DEBUG] Config file exists, content length: ${configContent.length} bytes`);
+        console.log(`[REMOTES_DEBUG] Config file content: ${configContent}`);
+      } else {
+        console.log(`[REMOTES_DEBUG] Config file does not exist at: ${this.configPath}`);
+      }
+      
       const settings = this.getSettings();
+      console.log(`[REMOTES_DEBUG] Settings: ${JSON.stringify(settings)}`);
+      
+      // Detailed validation and logging for rclone path
       if (!settings.rclonePath) {
-        console.warn('Rclone path not configured, returning empty remotes list');
-        return [];
+        console.warn('[REMOTES_DEBUG] CRITICAL: Rclone path not configured in settings');
+        return { remotes: [], error: 'Rclone path not configured in settings' };
       }
-
-      // Check if config file exists
+      
+      console.log(`Using rclone path: ${settings.rclonePath}`);
+      
+      // Check if rclone executable exists and is accessible
+      if (!fs.existsSync(settings.rclonePath)) {
+        console.error(`CRITICAL: Rclone executable not found at path: ${settings.rclonePath}`);
+        return { remotes: [], error: `Rclone executable not found at: ${settings.rclonePath}` };
+      }
+      
+      // Check if executable has proper permissions
+      try {
+        fs.accessSync(settings.rclonePath, fs.constants.X_OK);
+        console.log(`Rclone executable has proper execution permissions`);
+      } catch (permError) {
+        console.error(`CRITICAL: Rclone executable lacks execution permissions: ${permError.message}`);
+        return { remotes: [], error: `Rclone executable lacks execution permissions` };
+      }
+      
+      // Validate config file
       if (!fs.existsSync(this.configPath)) {
-        console.warn(`Config file not found at ${this.configPath}, returning empty remotes list`);
-        return [];
+        console.warn(`CRITICAL: Config file not found at ${this.configPath}`);
+        return { remotes: [], error: `Config file not found at ${this.configPath}` };
       }
-
-      // Add timeout to prevent hanging
-      const output = await new Promise((resolve, reject) => {
-        // Create a timeout to prevent hanging
-        const timeoutId = setTimeout(() => {
-          console.error('Timeout while listing remotes');
-          resolve(''); // Resolve with empty string instead of rejecting
-        }, 5000); // 5 second timeout
-
-        const execProcess = exec(
-          `"${settings.rclonePath}" --config "${this.configPath}" listremotes`,
-          { timeout: 5000 }, // Add timeout option to exec
-          (error, stdout) => {
-            clearTimeout(timeoutId);
-            if (error) {
-              console.error(`Error executing rclone: ${error.message}`);
-              resolve(''); // Resolve with empty string instead of rejecting
-            } else {
-              resolve(stdout);
-            }
+      
+      // Check if config file is readable
+      try {
+        const configContent = fs.readFileSync(this.configPath, 'utf8');
+        if (!configContent.trim()) {
+          console.warn(`CRITICAL: Config file is empty at ${this.configPath}`);
+          return { remotes: [], error: `Config file is empty` };
+        }
+        console.log(`Config file exists and is readable`);
+      } catch (readError) {
+        console.error(`CRITICAL: Cannot read config file: ${readError.message}`);
+        return { remotes: [], error: `Cannot read config file: ${readError.message}` };
+      }
+      
+      // Use spawn instead of exec for better control and to avoid shell injection
+      console.log(`Spawning rclone process to list remotes...`);
+      
+      const { spawn } = require('child_process');
+      
+      const output = await new Promise((resolve) => {
+        let stdout = '';
+        let stderr = '';
+        
+        // Use spawn with explicit arguments to avoid shell injection
+        const rcloneProcess = spawn(settings.rclonePath, [
+          '--config', this.configPath,
+          'listremotes'
+        ]);
+        
+        rcloneProcess.stdout.on('data', (data) => {
+          stdout += data.toString();
+          console.log(`Received stdout data from rclone: ${data.length} bytes`);
+        });
+        
+        rcloneProcess.stderr.on('data', (data) => {
+          stderr += data.toString();
+          console.error(`Received stderr from rclone: ${data.toString()}`);
+          
+          // Check for OAuth URLs in stderr
+          if (stderr.includes('http://127.0.0.1:') ||
+              stderr.includes('https://accounts.google.com/o/oauth2/')) {
+            console.error('CRITICAL: OAuth authentication URL detected - this requires user interaction');
           }
-        );
-
-        // Handle process errors
-        execProcess.on('error', (err) => {
-          clearTimeout(timeoutId);
-          console.error(`Process error: ${err.message}`);
-          resolve('');
+        });
+        
+        rcloneProcess.on('error', (err) => {
+          console.error(`CRITICAL: Failed to start rclone process: ${err.message}`);
+          resolve({ stdout: '', stderr: err.message, error: err });
+        });
+        
+        rcloneProcess.on('close', (code) => {
+          console.log(`Rclone process exited with code ${code}`);
+          if (code !== 0) {
+            console.error(`CRITICAL: Rclone process failed with code ${code}`);
+            resolve({ stdout, stderr, error: `Process exited with code ${code}` });
+          } else {
+            resolve({ stdout, stderr });
+          }
         });
       });
-
+      
+      // Handle potential errors from the process
+      if (output.error) {
+        console.error(`Error executing rclone: ${output.error}`);
+        return { remotes: [], error: `Error executing rclone: ${output.error}` };
+      }
+      
+      // Check for stderr output
+      if (output.stderr && output.stderr.trim()) {
+        console.warn(`Rclone produced stderr output: ${output.stderr}`);
+        // If stderr contains OAuth URLs, this is likely the root cause
+        if (output.stderr.includes('http://127.0.0.1:') ||
+            output.stderr.includes('https://accounts.google.com/o/oauth2/')) {
+          return {
+            remotes: [],
+            error: 'OAuth authentication required. Please run rclone config in terminal first to authenticate.'
+          };
+        }
+      }
+      
       // Parse the output
-      const remotes = output.trim() ? output.trim().split('\n').map(remote => remote.replace(':', '')) : [];
-      console.log(`Found ${remotes.length} remotes`);
-      return remotes;
+      const remotes = output.stdout && output.stdout.trim()
+        ? output.stdout.trim().split('\n').map(remote => remote.replace(':', ''))
+        : [];
+      
+      console.log(`Found ${remotes.length} remotes from rclone command`);
+      
+      // If no remotes were found using rclone command, try to parse the config file directly
+      if (remotes.length === 0) {
+        console.log(`[REMOTES_DEBUG] No remotes found using rclone command, trying to parse config file directly`);
+        try {
+          if (fs.existsSync(this.configPath)) {
+            const configContent = fs.readFileSync(this.configPath, 'utf8');
+            console.log(`[REMOTES_DEBUG] Config file content for direct parsing: ${configContent}`);
+            
+            // Use regex to find all remote sections in the config file
+            const remoteSections = configContent.match(/\[([^\]]+)\]/g);
+            if (remoteSections && remoteSections.length > 0) {
+              const parsedRemotes = remoteSections.map(section => section.replace('[', '').replace(']', ''));
+              console.log(`[REMOTES_DEBUG] Found ${parsedRemotes.length} remotes by direct parsing: ${parsedRemotes.join(', ')}`);
+              return { remotes: parsedRemotes };
+            } else {
+              console.log(`[REMOTES_DEBUG] No remote sections found in config file by direct parsing`);
+            }
+          } else {
+            console.log(`[REMOTES_DEBUG] Config file does not exist for direct parsing: ${this.configPath}`);
+          }
+        } catch (parseError) {
+          console.error(`[REMOTES_DEBUG] Error parsing config file directly: ${parseError.message}`);
+        }
+      }
+      
+      return { remotes };
     } catch (error) {
-      console.error(`Error listing remotes: ${error.message}`);
-      return [];
+      console.error(`CRITICAL: Unexpected error listing remotes: ${error.message}`);
+      
+      // Try to parse the config file directly as a fallback
+      console.log(`[REMOTES_DEBUG] Error occurred, trying to parse config file directly as fallback`);
+      try {
+        if (fs.existsSync(this.configPath)) {
+          const configContent = fs.readFileSync(this.configPath, 'utf8');
+          console.log(`[REMOTES_DEBUG] Config file content for fallback parsing: ${configContent}`);
+          
+          // Use regex to find all remote sections in the config file
+          const remoteSections = configContent.match(/\[([^\]]+)\]/g);
+          if (remoteSections && remoteSections.length > 0) {
+            const parsedRemotes = remoteSections.map(section => section.replace('[', '').replace(']', ''));
+            console.log(`[REMOTES_DEBUG] Found ${parsedRemotes.length} remotes by fallback parsing: ${parsedRemotes.join(', ')}`);
+            return { remotes: parsedRemotes };
+          }
+        }
+      } catch (fallbackError) {
+        console.error(`[REMOTES_DEBUG] Error in fallback parsing: ${fallbackError.message}`);
+      }
+      
+      return { remotes: [], error: `Unexpected error: ${error.message}` };
     }
   }
 
@@ -588,24 +761,9 @@ class ConfigManager {
       // Get settings for rclone path
       const settings = this.getSettings();
       
-      // Use the testSync function from sync-handler to check for orphan folders
-      if (pfRemoteName && settings.rclonePath) {
-        console.log('Running testSync to check for orphan folders...');
-        const testResult = await syncHandler.testSync({
-          rclonePath: settings.rclonePath,
-          combinedConfigPath: combinedConfigPath,
-          cloudRemotes: [remoteName],
-          pfRemoteName: pfRemoteName,
-          bucketName: 'asi-essentia-ai-new',
-          execute: false // Use dry-run mode
-        });
-        
-        // Add the testSync output to the topDirs
-        if (testResult.syncOutput) {
-          topDirs += "\n\n=== Orphan Folder Check ===\n";
-          topDirs += testResult.syncOutput;
-        }
-      }
+      // We no longer check for orphan folders here as per user request
+      // The check remote function should only deal with remote storage
+      console.log('Skipping orphan folder check in checkRemote function');
       
       return {
         name: remoteName,
