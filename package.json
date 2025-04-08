@@ -1,6 +1,6 @@
 {
   "name": "pf-config",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Application for configuring cloud storage connections with PageFinder",
   "main": "src/main.js",
   "scripts": {
