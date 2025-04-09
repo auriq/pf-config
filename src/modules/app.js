@@ -1,3 +1,4 @@
+
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const { exec } = require("child_process");
 const path = require("path");
@@ -491,8 +492,22 @@ class CloudConfigApp {
           };
         }
 
+        // Extract bucket name from config
+        let bucketName = 'asi-essentia-ai-new';
+        const bucketMatch = configContent.match(/bucket\s*=\s*([^\n]+)/);
+        if (bucketMatch) {
+          bucketName = bucketMatch[1].trim();
+        }
+        
+        // Extract prefix from config
+        let prefix = `user/${remoteName}`;
+        const prefixMatch = configContent.match(/prefix\s*=\s*([^\n]+)/);
+        if (prefixMatch) {
+          prefix = prefixMatch[1].trim();
+        }
+        
         // Use the specified format for testing connection
-        const formattedPath = `${remoteName}:asi-essentia-ai-new/user/${remoteName}`;
+        const formattedPath = `${remoteName}:${bucketName}/${prefix}/${remoteName}`;
         console.log(`Using formatted path: ${formattedPath}`);
         
         // Use lsd command with max-depth 1, or ls command if checkbox is checked
@@ -524,8 +539,8 @@ class CloudConfigApp {
           details: {
             remoteName,
             username: remoteName,
-            path: `asi-essentia-ai-new/user/${remoteName}`,
-            fullPath: `${remoteName}:asi-essentia-ai-new/user/${remoteName}`,
+            path: `${bucketName}/${prefix}/${remoteName}`,
+            fullPath: `${remoteName}:${bucketName}/${prefix}/${remoteName}`,
             output
           }
         };
@@ -604,14 +619,23 @@ class CloudConfigApp {
         // Get cloud remotes
         const cloudRemotes = await this.configManager.listRemotes();
         
-        // Default bucket name
+        // Extract bucket name from pf.conf
         let bucketName = 'asi-essentia-ai-new';
         const bucketMatch = pfConfig.match(/bucket\s*=\s*([^\n]+)/);
         if (bucketMatch) {
           bucketName = bucketMatch[1].trim();
         }
+        
+        // Extract prefix from pf.conf
+        let prefix = `user/${pfRemoteName}`;
+        const prefixMatch = pfConfig.match(/prefix\s*=\s*([^\n]+)/);
+        if (prefixMatch) {
+          prefix = prefixMatch[1].trim();
+        }
+        
         // Use sync-handler.js instead of sync.sh
         console.log('Running sync test using sync-handler.js...');
+        console.log(`Using bucket: ${bucketName}, prefix: ${prefix}`);
 
         
         // Make sure cloudRemotes is an array of strings (remote names)
@@ -648,6 +672,7 @@ class CloudConfigApp {
           cloudRemotes: remoteNames,
           pfRemoteName,
           bucketName,
+          prefix,
           foldersToDelete: [],
           remoteMetadata
         };
@@ -760,12 +785,21 @@ class CloudConfigApp {
         
         console.log(`Cloud remotes for sync exec: ${JSON.stringify(remoteNames)}`);
         
-        // Default bucket name
+        // Extract bucket name from pf.conf
         let bucketName = 'asi-essentia-ai-new';
         const bucketMatch = pfConfig.match(/bucket\s*=\s*([^\n]+)/);
         if (bucketMatch) {
           bucketName = bucketMatch[1].trim();
         }
+        
+        // Extract prefix from pf.conf
+        let prefix = `user/${pfRemoteName}`;
+        const prefixMatch = pfConfig.match(/prefix\s*=\s*([^\n]+)/);
+        if (prefixMatch) {
+          prefix = prefixMatch[1].trim();
+        }
+        
+        console.log(`Using bucket: ${bucketName}, prefix: ${prefix}`);
         
         try {
           // Use sync-handler.js instead of sync.sh
@@ -781,6 +815,7 @@ class CloudConfigApp {
             cloudRemotes: remoteNames,
             pfRemoteName,
             bucketName,
+            prefix,
             foldersToDelete: [],
             remoteMetadata
           };

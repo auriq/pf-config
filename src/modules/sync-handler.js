@@ -202,7 +202,14 @@ async function testSync(options) {
       const sourcePath = subfolder
         ? `${remoteName}:${subfolder.startsWith('/') ? '' : '/'}${subfolder}`
         : `${remoteName}:`;
-      const destPath = `${pfRemoteName}:${bucketName}/user/${pfRemoteName}/${remoteName}`;
+      
+      // Extract prefix from pf.conf if available, otherwise use default
+      let prefix = `user/${pfRemoteName}`;
+      if (options.prefix) {
+        prefix = options.prefix;
+      }
+      
+      const destPath = `${pfRemoteName}:${bucketName}/${prefix}/${pfRemoteName}/${remoteName}`;
       
       // Build the command
       let syncCmd;
