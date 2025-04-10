@@ -1,6 +1,6 @@
 /**
  * Sync Handler Module
- * 
+ *
  * This module provides functions for syncing between cloud storage and PageFinder.
  * It replaces the shell script approach with direct JavaScript functions.
  */
@@ -14,7 +14,7 @@ const terminal = require('./terminal-output');
 
 /**
  * Perform a test sync operation (dry run)
- * 
+ *
  * @param {Object} options - Options for the sync operation
  * @param {string} options.rclonePath - Path to the rclone executable
  * @param {string} options.combinedConfigPath - Path to the combined rclone config file
@@ -26,7 +26,7 @@ const terminal = require('./terminal-output');
  */
 async function testSync(options) {
   const { rclonePath, combinedConfigPath, cloudRemotes: rawCloudRemotes, pfRemoteName, bucketName, execute = false, remoteMetadata = {} } = options;
-  
+
   // Ensure cloudRemotes is an array of strings (remote names)
   let cloudRemotes = [];
   if (Array.isArray(rawCloudRemotes)) {
@@ -38,39 +38,39 @@ async function testSync(options) {
     // Handle case where cloudRemotes might be an object with remote names as keys
     cloudRemotes = Object.keys(rawCloudRemotes);
   }
-  
+
   // Use consistent messaging, only difference should be dry-run flag
   terminal.log(`Running sync${execute ? '' : ' (dry-run)'}...`);
   let syncOutput = '';
-  
+
   // Function to append to syncOutput
   const appendToOutput = (message) => {
     syncOutput += `\n${message}`;
     terminal.log(message);
   };
   let success = true;
-  
+
   // Create a temporary JSON config for the sync operation
   const tmpConfigPath = path.join(env.USER_DATA_DIR, 'pf-config-sync-test.json');
-  
+
   try {
     // Write config to temp file
     fs.writeFileSync(tmpConfigPath, JSON.stringify(options, null, 2));
-    
+
     // Check for orphan folders in the destination
     {
       // Add a clear header for orphan folder checking
       // Use consistent messaging for orphan folder checking
       appendToOutput('=== CHECKING FOR ORPHAN FOLDERS ===');
       appendToOutput(`Checking for orphan folders in destination${execute ? '' : ' (dry-run)'}...`);
-      
+
       // Format the destination path (base path without remote name)
       const destPath = `${pfRemoteName}:${bucketName}/user/${pfRemoteName}`;
-      
+
       // Build the command to list folders in the destination
       const lsdCmd = `"${rclonePath}" lsd "${destPath}" --max-depth 1 --config "${combinedConfigPath}"`;
       appendToOutput(`Executing command: ${lsdCmd}`);
-      
+
       try {
         // Execute the command to list folders in the destination
         const { stdout } = await new Promise((resolve, reject) => {
@@ -83,20 +83,20 @@ async function testSync(options) {
             resolve({ stdout, stderr });
           });
         });
-        
+
         // Parse the output to get the list of folders
         const folders = [];
         const lines = stdout.split('\n');
-        
+
         // Log the raw output for debugging
         appendToOutput(`Raw output from rclone lsd command:\n${stdout}`);
-        
+
         for (const line of lines) {
           if (line.trim()) {
             // Extract the folder name (last token)
             const parts = line.trim().split(/\s+/);
             appendToOutput(`Parsed line: ${line.trim()} into parts: ${JSON.stringify(parts)}`);
-            
+
             if (parts.length > 0) {
               const folder = parts[parts.length - 1];
               folders.push(folder);
@@ -106,53 +106,53 @@ async function testSync(options) {
             }
           }
         }
-        
+
         appendToOutput(`Found ${folders.length} folders in destination: ${folders.join(', ')}`);
         appendToOutput(`Cloud remotes for comparison: ${cloudRemotes.join(', ')}`);
-        
+
         // If no folders were found, log a warning
         if (folders.length === 0) {
           appendToOutput('Warning: No folders found in destination. Skipping orphan folder check.');
         }
-        
+
         // Check each folder to see if it exists in the remotes list
         for (const folder of folders) {
           // Normalize folder name for comparison (remove any trailing slashes)
           const normalizedFolder = folder.replace(/\/$/, '');
-          
+
           appendToOutput(`Checking if folder "${normalizedFolder}" exists in remotes list: ${cloudRemotes.join(', ')}`);
-          
+
           // Check if the folder is in the cloud remotes list
           // An orphan folder is one that exists in the destination but not in the source
-          
+
           // Debug the comparison
           appendToOutput(`Checking folder "${normalizedFolder}" against cloud remotes: ${JSON.stringify(cloudRemotes)}`);
-          
+
           // Check if the folder exists in the cloud remotes list
           const matchingRemote = cloudRemotes.find(remote =>
             remote.toLowerCase() === normalizedFolder.toLowerCase()
           );
-          
+
           const isInRemotes = !!matchingRemote;
-          
+
           // Log the result
           appendToOutput(`Folder "${normalizedFolder}" ${isInRemotes ? 'exists' : 'does not exist'} in remotes list`);
-          
+
           appendToOutput(`Is "${normalizedFolder}" in remotes list? ${isInRemotes}`);
-          
+
           if (!isInRemotes) {
             appendToOutput(`Folder "${normalizedFolder}" does not exist in remotes list, deleting...`);
-            
+
             // Format the delete path
             const deletePath = `${destPath}/${normalizedFolder}`;
-            
+
             // Build the command to purge the folder
             let purgeCmd;
             // Use consistent messaging for purging
             appendToOutput(`=== PURGING ORPHAN FOLDER: ${normalizedFolder}${execute ? '' : ' (dry-run)'} ===`);
             purgeCmd = `"${rclonePath}" purge "${deletePath}"${execute ? '' : ' --dry-run'} --config "${combinedConfigPath}"`;
             appendToOutput(`Executing purge command: ${purgeCmd}`);
-            
+
             // Execute the purge command
             try {
               await new Promise((resolve, reject) => {
@@ -162,7 +162,7 @@ async function testSync(options) {
                     reject(error);
                     return;
                   }
-                  
+
                   // Use consistent messaging for purge results
                   appendToOutput(`=== PURGE SUCCESSFUL: Folder ${normalizedFolder}${execute ? ' deleted' : ' would be deleted (dry-run)'} ===`);
                   resolve({ stdout, stderr });
@@ -183,40 +183,40 @@ async function testSync(options) {
         // Continue with the sync operation even if checking for orphan folders fails
       }
     }
-    
+
     // For each remote, perform a sync operation
     // Filter out 'remotes' to prevent errors with non-existent config sections
     for (const remoteName of cloudRemotes.filter(name => name !== 'remotes')) {
       terminal.log(`Testing sync for remote: ${remoteName}`);
-      
+
       // Check if this remote has subfolder restrictions
       let subfolder = '';
       if (remoteMetadata && remoteMetadata[remoteName] && remoteMetadata[remoteName].type === 'subfolder') {
         subfolder = remoteMetadata[remoteName].subfolder || '';
         terminal.log(`Using subfolder restriction for ${remoteName}: ${subfolder}`);
       }
-      
+
       // Format the source and destination paths
       // If subfolder is specified, append it to the source path
       // Handle case where subfolder already starts with a slash
       const sourcePath = subfolder
         ? `${remoteName}:${subfolder.startsWith('/') ? '' : '/'}${subfolder}`
         : `${remoteName}:`;
-      
+
       // Extract prefix from pf.conf if available, otherwise use default
       let prefix = `user/${pfRemoteName}`;
       if (options.prefix) {
         prefix = options.prefix;
       }
-      
+
       const destPath = `${pfRemoteName}:${bucketName}/${prefix}/${pfRemoteName}/${remoteName}`;
-      
+
       // Build the command
       let syncCmd;
       // Use consistent command construction and messaging
       syncCmd = `"${rclonePath}" sync "${sourcePath}" "${destPath}"${execute ? '' : ' --dry-run'} --config "${combinedConfigPath}"`;
       terminal.log(`Executing sync${execute ? '' : ' test'} command: ${syncCmd}`);
-      
+
       // Execute the sync command
       try {
         const { stdout, stderr } = await new Promise((resolve, reject) => {
@@ -231,7 +231,7 @@ async function testSync(options) {
             }
           });
         });
-        
+
         // Append the output for this remote
         syncOutput += `\n--- Sync test for ${remoteName} ---\n${stdout}`;
         terminal.log(`Sync test output for ${remoteName}: ${stdout}`);
@@ -241,14 +241,14 @@ async function testSync(options) {
         success = false;
       }
     }
-    
+
     // Clean up temp files
     try {
       fs.unlinkSync(tmpConfigPath);
     } catch (cleanupError) {
       terminal.error('Error cleaning up temp file:', cleanupError.message);
     }
-    
+
     return {
       success: success && !syncOutput.includes('Error:'),
       message: success
@@ -258,7 +258,7 @@ async function testSync(options) {
     };
   } catch (error) {
     terminal.error('Error testing connections:', error.message);
-    
+
     // Clean up temp files
     try {
       if (fs.existsSync(tmpConfigPath)) {
@@ -267,7 +267,7 @@ async function testSync(options) {
     } catch (cleanupError) {
       terminal.error('Error cleaning up temp file:', cleanupError.message);
     }
-    
+
     return {
       success: false,
       message: `Sync${execute ? '' : ' test'} failed: ${error.message}`,
