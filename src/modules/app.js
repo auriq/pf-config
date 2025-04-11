@@ -1322,7 +1322,7 @@ setupConsoleLogging();
 console.log('Starting scheduled sync operation at ' + new Date().toISOString());
 
 // Import the sync-handler module directly
-const syncHandlerPath = '${path.join(env.PATHS.appBase, 'src', 'modules', 'sync-handler').replace(/\\/g, '\\\\')}';
+const syncHandlerPath = '${path.join(app.getPath('userData'), 'scripts', 'sync-handler').replace(/\\/g, '\\\\')}';
 console.log('Loading sync-handler module from:', syncHandlerPath);
 const syncHandler = require(syncHandlerPath);
 

@@ -41,7 +41,7 @@
   },
   "build": {
     "appId": "com.pagefinder.config",
-    "productName": "PageFinder Configuration",
+    "productName": "PageFinderConfiguration",
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "asar": true,
     "asarUnpack": [
@@ -60,6 +60,9 @@
       "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
       "!**/{appveyor.yml,.travis.yml,circle.yml}",
       "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+    ],
+    "extraFiles": [
+      "scripts/sync-handler.js"
     ],
     "directories": {
       "buildResources": "build",
@@ -131,7 +134,7 @@
       "category": "Utility",
       "maintainer": "PageFinder Team <support@pagefinder.com>",
       "desktop": {
-        "Name": "PageFinder Configuration",
+        "Name": "PageFinderConfiguration",
         "Comment": "Configure cloud storage connections with PageFinder",
         "Categories": "Utility;"
       }
