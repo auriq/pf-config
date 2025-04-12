@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PageFinder Configuration</title>
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+      <div class="logo">
+        <h2>PageFinder Config</h2>
+      </div>
+      <nav class="nav-menu">
+        <ul>
+          <li class="nav-item active" data-section="cloud-config">
+            <span class="nav-icon">☁️</span>
+            <span class="nav-text">Cloud Config</span>
+          </li>
+          <li class="nav-item" data-section="pagefinder-config">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-text">PageFinder Config</span>
+          </li>
+          <li class="nav-item" data-section="sync">
+            <span class="nav-icon">🔄</span>
+            <span class="nav-text">Sync</span>
+          </li>
+          <li class="nav-item" data-section="schedule">
+            <span class="nav-icon">🕒</span>
+            <span class="nav-text">Schedule</span>
+          </li>
+          <li class="nav-item" data-section="settings">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-text">Settings</span>
+          </li>
+        </ul>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="exit-button" class="btn btn-exit">
+          <span class="nav-icon">🚪</span>
+          <span class="nav-text">Exit</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <!-- Cloud Config Section -->
+      <section id="cloud-config" class="content-section active">
+        <h2>Cloud Configuration</h2>
+        
+        <div class="card">
+          <h3>Add Cloud Storage</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="remote-name">Remote Name:</label>
+              <input type="text" id="remote-name" placeholder="Enter a name for this remote">
+            </div>
+            <div class="form-group">
+              <label for="remote-type">Type:</label>
+              <select id="remote-type">
+                <option value="drive">Google Drive</option>
+                <option value="onedrive">OneDrive</option>
+                <option value="box">Box</option>
+                <option value="local">Local Directory</option>
+              </select>
+            </div>
+          </div>
+          <button id="add-cloud-btn" class="btn btn-primary">Add Cloud Storage</button>
+        </div>
+        
+        <div class="card">
+          <h3>Cloud Storage List</h3>
+          <div id="cloud-list" class="list-container">
+            <!-- Cloud storage items will be added here dynamically -->
+            <div class="empty-list-message">No cloud storage configured yet.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PageFinder Config Section -->
+      <section id="pagefinder-config" class="content-section">
+        <h2>PageFinder Configuration</h2>
+        
+        <div class="card">
+          <h3>Import Configuration</h3>
+          <div class="form-group">
+            <label for="pf-config-path">Configuration File:</label>
+            <div class="file-input-container">
+              <input type="text" id="pf-config-path" readonly placeholder="Select a configuration file">
+              <button id="browse-pf-config" class="btn btn-secondary">Browse</button>
+            </div>
+          </div>
+          <button id="import-pf-config" class="btn btn-primary">Import Configuration</button>
+        </div>
+        
+        <div class="card">
+          <h3>Test Connection</h3>
+          <p>Test the connection to PageFinder using the imported configuration.</p>
+          <button id="test-pf-connection" class="btn btn-primary" disabled>Test Connection</button>
+          <div id="pf-connection-result" class="result-container"></div>
+        </div>
+        
+        <div class="card">
+          <h3>Purge Orphan Folders</h3>
+          <p>Remove orphaned folders from PageFinder that no longer have corresponding cloud storage.</p>
+          <div class="button-group">
+            <button id="purge-test-btn" class="btn btn-secondary" disabled>Test Purge</button>
+            <button id="purge-exec-btn" class="btn btn-primary" disabled>Execute Purge</button>
+          </div>
+          <div id="purge-result" class="result-container"></div>
+        </div>
+      </section>
+
+      <!-- Sync Section -->
+      <section id="sync" class="content-section">
+        <h2>Synchronization</h2>
+        
+        <div class="card">
+          <h3>Sync Cloud Storage to PageFinder</h3>
+          <p>Synchronize files from configured cloud storage to PageFinder.</p>
+          <div class="button-group">
+            <button id="sync-test-btn" class="btn btn-secondary">Test Sync</button>
+            <button id="sync-exec-btn" class="btn btn-primary" disabled>Execute Sync</button>
+          </div>
+          <div id="sync-result" class="result-container"></div>
+        </div>
+      </section>
+
+      <!-- Schedule Section -->
+      <section id="schedule" class="content-section">
+        <h2>Schedule Synchronization</h2>
+        
+        <div class="card">
+          <h3>Set Up Scheduled Sync</h3>
+          <div class="form-group">
+            <label for="schedule-interval">Sync Interval:</label>
+            <select id="schedule-interval">
+              <option value="hourly">Hourly</option>
+              <option value="daily" selected>Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
+          <button id="setup-schedule-btn" class="btn btn-primary">Set Up Schedule</button>
+          <div id="schedule-result" class="result-container"></div>
+        </div>
+        
+        <div class="card">
+          <h3>Last Sync Log</h3>
+          <div id="last-sync-log" class="log-container">
+            <div class="empty-log-message">No sync log available.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Settings Section -->
+      <section id="settings" class="content-section">
+        <h2>Application Settings</h2>
+        
+        <div class="card">
+          <h3>Environment Configuration</h3>
+          <div class="form-group">
+            <label for="rclone-path">rclone Path:</label>
+            <div class="file-input-container">
+              <input type="text" id="rclone-path" placeholder="Path to rclone executable">
+              <button id="browse-rclone-path" class="btn btn-secondary">Browse</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="workspace-dir">Workspace Directory:</label>
+            <div class="file-input-container">
+              <input type="text" id="workspace-dir" placeholder="Directory for configuration files">
+              <button id="browse-workspace-dir" class="btn btn-secondary">Browse</button>
+            </div>
+          </div>
+          <button id="save-settings-btn" class="btn btn-primary">Save Settings</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Modal Dialog -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-title">Confirmation</h3>
+        <span class="modal-close">&times;</span>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <!-- Modal content will be added here dynamically -->
+      </div>
+      <div class="modal-footer">
+        <button id="modal-cancel" class="btn btn-secondary">Cancel</button>
+        <button id="modal-confirm" class="btn btn-primary">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="index.js"></script>
+</body>
+</html>

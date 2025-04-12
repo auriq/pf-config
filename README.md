@@ -1,6 +1,14 @@
 # PageFinder Configuration Utility
 
-This application helps configure cloud storage connections with PageFinder.
+This application helps configure cloud storage connections with PageFinder, providing a user-friendly interface for managing rclone configurations.
+
+## Features
+
+- **Cloud Configuration**: Add, list, check, and delete cloud storage connections
+- **PageFinder Configuration**: Import and test PageFinder configuration files
+- **Synchronization**: Sync files between cloud storage and PageFinder
+- **Scheduling**: Set up automated synchronization jobs
+- **Purge**: Remove orphaned folders from PageFinder
 
 ## Prerequisites
 
@@ -8,83 +16,108 @@ This application helps configure cloud storage connections with PageFinder.
 - [Electron](https://www.electronjs.org/)
 - [rclone](https://rclone.org/) (installed and available in your PATH)
 
+## Installation
+
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/pagefinder/pf-config.git
+   cd pf-config
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the application:
+   ```bash
+   npm start
+   ```
+
+## Usage
+
+### Cloud Configuration
+
+1. **Add Cloud Storage**:
+   - Enter a name for the remote
+   - Select the cloud storage type (Google Drive, OneDrive, Box, Local)
+   - Click "Add Cloud Storage"
+   - Follow the authentication prompts if required
+
+2. **Manage Cloud Storage**:
+   - View a list of configured cloud storage connections
+   - Set subfolder paths to limit the scope of synchronization
+   - Check connections to verify they're working
+   - Delete connections that are no longer needed
+
+### PageFinder Configuration
+
+1. **Import Configuration**:
+   - Click "Browse" to select a PageFinder configuration file
+   - Click "Import Configuration" to import the file
+
+2. **Test Connection**:
+   - Click "Test Connection" to verify the connection to PageFinder
+
+3. **Purge Orphan Folders**:
+   - Click "Test Purge" to perform a dry run of the purge operation
+   - If the test is successful, click "Execute Purge" to remove orphaned folders
+
+### Synchronization
+
+1. **Test Sync**:
+   - Click "Test Sync" to perform a dry run of the synchronization
+   - Review the results to ensure everything looks correct
+
+2. **Execute Sync**:
+   - If the test is successful, click "Execute Sync" to perform the actual synchronization
+
+### Scheduling
+
+1. **Set Up Schedule**:
+   - Select the desired sync interval (hourly, daily, weekly, monthly)
+   - Click "Set Up Schedule" to create a scheduled job
+
 ## Development
 
+### Development Mode
+
 ```bash
-# Install dependencies
-npm install
-
-# Start the application
-npm start
+# Start the application in development mode
+npm run dev
 ```
-## Building
+
+### Building
 
 This application can be built for macOS, Windows, and Linux platforms.
 
-For detailed instructions on building for multiple platforms, see [Multi-Platform Build Guide](docs/multi-platform-build.md).
-This application can be built for macOS, Windows, and Linux platforms.
-
-### macOS
+#### macOS
 
 ```bash
 # Build for macOS
 npm run dist:mac
-
-# Build and sign for macOS
-npm run dist:mac:signed
 ```
 
-### Windows
+#### Windows
 
 ```bash
 # Build for Windows
 npm run dist:win
-
-# Or use the batch script
-scripts\build-all.bat
 ```
 
-### Linux
+#### Linux
 
 ```bash
 # Build for Linux
 npm run dist:linux
 ```
 
-### All Platforms
+#### All Platforms
 
 ```bash
 # Build for all platforms (macOS, Windows, Linux)
 npm run dist:all
-
-# Use the platform-specific build script (automatically detects platform)
-npm run build
-
-# Or use the shell script on macOS/Linux
-npm run build:unix
-# or
-./scripts/build-all.sh
-
-# Or use the batch script on Windows
-npm run build:win
-# or
-scripts\build-all.bat
 ```
-
-### Creating a GitHub Release
-
-To create a GitHub release with all built artifacts:
-
-```bash
-# Build and create a GitHub release
-npm run release
-```
-
-This script will:
-1. Build the application for all platforms
-2. Create a new tag based on the version in package.json
-3. Push the tag to GitHub
-4. Provide instructions for completing the release
 
 ## Path Handling
 
@@ -108,8 +141,6 @@ To verify that the application works correctly on your platform, run:
 npm test
 ```
 
-This will run platform-specific tests to ensure compatibility.
-
 ## Troubleshooting
 
 If you encounter any issues:
@@ -130,12 +161,6 @@ npm run fix:permissions
 # If that doesn't work, try with sudo
 sudo ./scripts/fix-permissions.sh
 ```
-
-This script will:
-- Fix rclone executable permissions
-- Create necessary configuration directories
-- Set appropriate permissions on app files
-- Create default configuration files if they don't exist
 
 ## License
 

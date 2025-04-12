@@ -5,22 +5,16 @@
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
-    "test": "node scripts/test-platform.js",
-    "test:platform": "node scripts/test-platform.js",
+    "dev": "NODE_ENV=development electron .",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
-    "dist:mac": "electron-builder --mac && node scripts/fix-mac-issues.js",
-    "dist:mac:signed": "electron-builder --mac && ./scripts/sign-mac-app.sh && node scripts/fix-mac-issues.js",
+    "dist:mac": "electron-builder --mac",
     "dist:win": "electron-builder --win",
     "dist:linux": "electron-builder --linux",
-    "dist:all": "electron-builder -mwl && node scripts/fix-mac-issues.js",
-    "fix:mac": "node scripts/fix-mac-issues.js",
-    "fix:permissions": "./scripts/fix-permissions.sh",
-    "build:win": "node scripts/build-all.bat",
-    "build:unix": "node scripts/build-all.sh",
-    "build": "node -e \"require('child_process').spawn(process.platform === 'win32' ? 'scripts\\\\build-all.bat' : 'scripts/build-all.sh', [], {stdio: 'inherit', shell: true})\"",
-    "release": "./scripts/create-github-release.sh",
-    "release:win": "./scripts/release-windows.sh"
+    "dist:all": "electron-builder -mwl",
+    "test": "jest",
+    "fix:permissions": "scripts/fix-permissions.sh",
+    "generate:icons": "node scripts/generate-icons.js"
   },
   "keywords": [
     "rclone",
@@ -31,7 +25,8 @@
   "author": "PageFinder Team <support@pagefinder.com>",
   "license": "MIT",
   "dependencies": {
-    "fs-extra": "^11.2.0"
+    "fs-extra": "^11.2.0",
+    "electron-log": "^5.0.1"
   },
   "devDependencies": {
     "electron": "^28.2.0",

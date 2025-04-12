@@ -1,291 +1,392 @@
-/**
- * PageFinder Configuration Application
- * Main entry point
- */
-const { app, BrowserWindow, ipcMain } = require('electron');
-const fs = require('fs-extra');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
-const { exec } = require('child_process');
-const { runPostInstall } = require('./post-install');
+const fs = require('fs-extra');
+const { spawn, exec } = require('child_process');
+const os = require('os');
 
-// Configure console logging first
-let terminal;
-try {
-  terminal = require('./modules/terminal-output');
-  terminal.configure({
-    useColors: true,
-    showTimestamp: true,
-    logToFile: true
-  });
-  
-  // Reset the log file at application startup
-  terminal.resetLogFile();
-  console.log('Terminal output module loaded successfully');
-} catch (error) {
-  console.error('Failed to load terminal-output module:', error.message);
+// Keep a global reference of the window object to prevent garbage collection
+let mainWindow;
+
+// Keep track of all running processes
+const runningProcesses = new Set();
+
+// Default environmental parameters
+let appConfig = {
+  path_rclone: '/usr/local/bin/rclone',
+  workspace_dir: '/tmp/pf-workspace'
+};
+
+// Determine platform-specific default workspace directory
+if (process.platform === 'win32') {
+  appConfig.path_rclone = 'rclone.exe'; // Assume it's in PATH on Windows
+  appConfig.workspace_dir = path.join(os.homedir(), 'AppData', 'Roaming', 'pf-config');
+} else if (process.platform === 'darwin') {
+  appConfig.workspace_dir = path.join(os.homedir(), '.config', 'pf-config');
 }
 
-// Log application startup
-console.log('PageFinder Configuration application starting...');
-console.log(`Platform: ${process.platform}, Architecture: ${process.arch}`);
+// Ensure workspace directory exists
+fs.ensureDirSync(appConfig.workspace_dir);
 
-// Ensure single instance of the app
-const gotTheLock = app.requestSingleInstanceLock();
-
-if (!gotTheLock) {
-  console.log('Another instance is already running. Quitting this instance.');
-  app.quit();
-} else {
-  // This is the first instance - register second-instance handler
-  app.on('second-instance', (event, commandLine, workingDirectory) => {
-    console.log('Second instance detected, focusing the main window');
-    // Someone tried to run a second instance, we should focus our window
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.focus();
-    }
-  });
-}
-
-// Load environment module
-let env;
-try {
-  env = require('./config/environment');
-  console.log('Environment module loaded successfully');
-  
-  // Ensure required directories exist
-  if (env.ensureDirectories()) {
-    console.log('Required directories verified');
-  } else {
-    console.error('Failed to verify required directories');
+// Load configuration if it exists
+const configPath = path.join(appConfig.workspace_dir, 'app-config.json');
+if (fs.existsSync(configPath)) {
+  try {
+    const savedConfig = fs.readJsonSync(configPath);
+    appConfig = { ...appConfig, ...savedConfig };
+  } catch (error) {
+    console.error('Error loading configuration:', error);
   }
-} catch (error) {
-  console.error('Failed to load environment module:', error.message);
 }
 
-// Import application modules
-const ConfigManager = require("./modules/config-manager");
+// Save configuration
+function saveConfig() {
+  try {
+    fs.writeJsonSync(configPath, appConfig, { spaces: 2 });
+  } catch (error) {
+    console.error('Error saving configuration:', error);
+  }
+}
 
-// Global reference to the window object
-let mainWindow = null;
-
-/**
- * Create the browser window - this function directly creates
- * the window without depending on other modules
- */
+// Create the main window
 function createWindow() {
-  // If window already exists, just focus it and return
-  if (mainWindow) {
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.focus();
-    return mainWindow;
-  }
-
-  console.log('Creating main window');
-  
-  // Create the browser window with basic settings
   mainWindow = new BrowserWindow({
-    width: 1100,
-    height: 900,
+    width: 1200,
+    height: 800,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-      // Explicitly enable remote module for packaged app
-      enableRemoteModule: true
-    },
-    title: "PageFinder Configuration",
-    show: false, // Don't show until ready
-    // Add macOS specific settings
-    backgroundColor: '#ffffff',
-    // Use default titleBarStyle to ensure window is movable
-    titleBarStyle: 'default',
-    // Make sure the window is movable
-    movable: true,
-    frame: true,
-    resizable: true
+      preload: path.join(__dirname, 'preload', 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
   });
 
   // Load the index.html file
-  const indexPath = path.join(__dirname, "index.html");
-  console.log(`Loading HTML from: ${indexPath}`);
-  console.log(`File exists: ${fs.existsSync(indexPath)}`);
-  
-  mainWindow.loadFile(indexPath);
-  
-  // When content has loaded, show the window
-  mainWindow.once('ready-to-show', () => {
-    console.log('Window content loaded, showing window');
-    mainWindow.show();
-    // On macOS, bring the application to the foreground
-    if (process.platform === 'darwin') {
-      app.dock.show();
-      app.focus({ steal: true });
-    }
-  });
-  
-  // Handle window closure
+  mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+
+  // Open DevTools in development mode
+  if (process.env.NODE_ENV === 'development') {
+    mainWindow.webContents.openDevTools();
+  }
+
+  // Handle window close
   mainWindow.on('closed', () => {
-    console.log('Main window closed');
     mainWindow = null;
   });
-  
-  // Log any load errors
-  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-    console.error(`Failed to load: ${errorDescription} (${errorCode})`);
+}
+
+// Create window when Electron is ready
+app.whenReady().then(() => {
+  createWindow();
+
+  // On macOS, recreate window when dock icon is clicked and no windows are open
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
   });
+});
 
-  // Return the window instance
-  return mainWindow;
-}
-
-/**
- * Main function to initialize and start the application
- */
-async function main() {
-  try {
-    console.log('Initializing application');
-    
-    // Create directories if they don't exist
-    // Use the paths defined in environment.js
-    console.log(`Using environment paths for directories`);
-    console.log(`Logs directory: ${env.PATHS.logs}`);
-    
-    // Ensure all required directories exist
-    fs.ensureDirSync(env.PATHS.logs);
-    fs.ensureDirSync(env.PATHS.data);
-    fs.ensureDirSync(env.PATHS.scripts);
-    fs.ensureDirSync(env.PATHS.backup);
-    
-    // Initialize the configuration manager first
-    const configManager = new ConfigManager();
-    console.log('Configuration manager initialized');
-    
-    // Initialize the application modules
-    const CloudConfigApp = require("./modules/app");
-    const cloudConfigApp = new CloudConfigApp(configManager);
-    
-    // Create the window first
-    mainWindow = createWindow();
-    cloudConfigApp.mainWindow = mainWindow; // Pass the window reference
-    
-    // Setup IPC handlers
-    cloudConfigApp.setupIPC();
-    console.log('IPC handlers set up');
-    
-    // Initialize the app (sets up signal handlers, etc.)
-    cloudConfigApp.init();
-    console.log('CloudConfigApp initialized');
-    
-    // Check for zombie processes on macOS
-    if (process.platform === 'darwin') {
-      await cloudConfigApp.checkForZombieProcesses();
-    }
-    
-    console.log('Application initialization complete');
-    
-    return cloudConfigApp;
-  } catch (error) {
-    console.error('Error in main:', error);
-    throw error;
-  }
-}
-
-// Capture uncaught exceptions
-process.on('uncaughtException', (err) => {
-  console.error(`Uncaught Exception: ${err.message}`);
-  console.error(err.stack);
-  
-  if (app.isReady()) {
-    const options = {
-      type: 'error',
-      title: 'Application Error',
-      message: 'An unexpected error occurred.',
-      detail: err.message,
-      buttons: ['OK']
-    };
-    
-    if (mainWindow) {
-      const { dialog } = require('electron');
-      dialog.showMessageBoxSync(mainWindow, options);
-    }
+// Quit when all windows are closed, except on macOS
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
   }
 });
 
-// Handle macOS open-url events (for custom protocol handling)
-app.on('open-url', (event, url) => {
-  event.preventDefault();
-  console.log(`Received URL: ${url}`);
-  
-  // If app is already running, focus the window
-  if (mainWindow) {
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.focus();
-  }
+// Terminate all running processes before quitting
+app.on('before-quit', () => {
+  terminateAllProcesses();
+  killAllRcloneProcesses();
 });
 
-// When Electron is ready, start the app
-app.on('ready', () => {
-  console.log('Electron ready event fired');
+// Terminate all running processes
+function terminateAllProcesses() {
+  console.log(`Terminating ${runningProcesses.size} running processes...`);
   
-  // Setup direct IPC close handler at the main process level
-  ipcMain.on("close-app", () => {
-    console.log('[MAIN] Close application request received, force quitting');
-    app.exit(0); // Force immediate exit
-  });
-  
-  // macOS-specific protocol handling setup
-  if (process.platform === 'darwin') {
-    // Register as handler for custom protocols (if any)
-    app.setAsDefaultProtocolClient('pf-config');
-    
-    // Run post-installation script on macOS
+  // Terminate each process
+  for (const process of runningProcesses) {
     try {
-      // Check if post-install has already run
-      const markerPath = path.join(app.getPath('userData'), '.post-install-complete');
-      if (!fs.existsSync(markerPath)) {
-        console.log('Running post-installation script for first launch...');
-        runPostInstall();
-      } else {
-        console.log('Post-installation already completed.');
+      // Check if process is still running
+      if (process.exitCode === null) {
+        // Kill the process
+        process.kill();
+        console.log(`Process ${process.pid} terminated.`);
       }
     } catch (error) {
-      console.error('Error checking/running post-install:', error);
+      console.error(`Error terminating process ${process.pid}:`, error);
     }
   }
   
-  main().catch(error => {
-    console.error('Failed to start application:', error);
+  // Clear the set
+  runningProcesses.clear();
+}
+
+// Kill all rclone processes
+function killAllRcloneProcesses() {
+  return new Promise((resolve, reject) => {
+    let command;
+    
+    // Platform-specific command to find and kill rclone processes
+    if (process.platform === 'win32') {
+      // Windows
+      command = 'taskkill /F /IM rclone.exe';
+    } else {
+      // macOS and Linux
+      command = "pkill -f 'rclone'";
+    }
+    
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        // Don't reject on error, as it might just mean no processes were found
+        console.log('No rclone processes found to kill or error killing processes:', error.message);
+      }
+      
+      if (stdout) {
+        console.log('Killed rclone processes:', stdout);
+      }
+      
+      resolve();
+    });
+  });
+}
+
+// IPC handlers for main process
+
+// Get application configuration
+ipcMain.handle('get-config', () => {
+  return appConfig;
+});
+
+// Update application configuration
+ipcMain.handle('update-config', (event, newConfig) => {
+  appConfig = { ...appConfig, ...newConfig };
+  saveConfig();
+  return appConfig;
+});
+
+// Execute rclone command
+ipcMain.handle('execute-rclone', async (event, command, args) => {
+  return new Promise((resolve, reject) => {
+    const rcloneProcess = spawn(appConfig.path_rclone, args);
+    
+    // Add to running processes
+    runningProcesses.add(rcloneProcess);
+    
+    let stdout = '';
+    let stderr = '';
+    
+    rcloneProcess.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+    
+    rcloneProcess.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+    
+    rcloneProcess.on('close', (code) => {
+      // Remove from running processes
+      runningProcesses.delete(rcloneProcess);
+      
+      if (code === 0) {
+        resolve({ success: true, stdout, stderr });
+      } else {
+        resolve({ success: false, stdout, stderr, code });
+      }
+    });
+    
+    rcloneProcess.on('error', (error) => {
+      // Remove from running processes
+      runningProcesses.delete(rcloneProcess);
+      
+      reject({ success: false, error: error.message });
+    });
   });
 });
 
-// Quit when all windows are closed
-app.on('window-all-closed', () => {
-  console.log('All windows closed');
-  // On macOS, it's common for applications to stay running
-  // even when all windows are closed
-  if (process.platform !== 'darwin') {
-    console.log('Non-macOS platform, quitting app');
-    app.quit();
-  } else {
-    console.log('macOS platform, app remains running');
+// Clean up rclone processes
+ipcMain.handle('cleanup-rclone', async () => {
+  try {
+    await killAllRcloneProcesses();
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
   }
 });
 
-// On macOS, re-create window when dock icon is clicked
-app.on('activate', () => {
-  console.log('App activated');
-  if (mainWindow === null) {
-    createWindow();
-  } else {
-    // If window exists but is minimized, restore it
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    // Focus the window to bring it to the front
-    mainWindow.focus();
+// Execute shell script
+ipcMain.handle('execute-script', async (event, scriptPath, args = []) => {
+  return new Promise((resolve, reject) => {
+    const scriptProcess = spawn(scriptPath, args, {
+      env: {
+        ...process.env,
+        WORKDIR: appConfig.workspace_dir,
+        PATH_RCLONE: appConfig.path_rclone
+      }
+    });
+    
+    // Add to running processes
+    runningProcesses.add(scriptProcess);
+    
+    let stdout = '';
+    let stderr = '';
+    
+    scriptProcess.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+    
+    scriptProcess.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+    
+    scriptProcess.on('close', (code) => {
+      // Remove from running processes
+      runningProcesses.delete(scriptProcess);
+      
+      if (code === 0) {
+        resolve({ success: true, stdout, stderr });
+      } else {
+        resolve({ success: false, stdout, stderr, code });
+      }
+    });
+    
+    scriptProcess.on('error', (error) => {
+      // Remove from running processes
+      runningProcesses.delete(scriptProcess);
+      
+      reject({ success: false, error: error.message });
+    });
+  });
+});
+
+// Open file dialog
+ipcMain.handle('open-file-dialog', async (event, options) => {
+  const result = await dialog.showOpenDialog(mainWindow, options);
+  return result;
+});
+
+// Read log file
+ipcMain.handle('read-log', async (event, logName) => {
+  const logPath = path.join(appConfig.workspace_dir, `${logName}.log`);
+  
+  if (!fs.existsSync(logPath)) {
+    return { success: false, error: 'Log file does not exist' };
+  }
+  
+  try {
+    const content = await fs.readFile(logPath, 'utf8');
+    return { success: true, content };
+  } catch (error) {
+    return { success: false, error: error.message };
   }
 });
 
-// Export functions for testing
-module.exports = {
-  createWindow,
-  main
-};
+// Read configuration file
+ipcMain.handle('read-config-file', async (event, configName) => {
+  const configPath = path.join(appConfig.workspace_dir, `${configName}.conf`);
+  
+  if (!fs.existsSync(configPath)) {
+    return { success: false, error: 'Configuration file does not exist' };
+  }
+  
+  try {
+    const content = await fs.readFile(configPath, 'utf8');
+    return { success: true, content };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Write configuration file
+ipcMain.handle('write-config-file', async (event, configName, content) => {
+  const configPath = path.join(appConfig.workspace_dir, `${configName}.conf`);
+  
+  try {
+    await fs.writeFile(configPath, content, 'utf8');
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Copy configuration file
+ipcMain.handle('copy-config-file', async (event, sourcePath, configName) => {
+  const destPath = path.join(appConfig.workspace_dir, `${configName}.conf`);
+  
+  try {
+    await fs.copy(sourcePath, destPath);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Read remote metadata
+ipcMain.handle('read-remote-metadata', async () => {
+  const metadataPath = path.join(appConfig.workspace_dir, 'remote-meta.json');
+  
+  try {
+    if (fs.existsSync(metadataPath)) {
+      const metadata = await fs.readJson(metadataPath);
+      return { success: true, metadata };
+    } else {
+      // Create empty metadata file if it doesn't exist
+      await fs.writeJson(metadataPath, {}, { spaces: 2 });
+      return { success: true, metadata: {} };
+    }
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Update remote metadata
+ipcMain.handle('update-remote-metadata', async (event, remoteName, metadata) => {
+  const metadataPath = path.join(appConfig.workspace_dir, 'remote-meta.json');
+  
+  try {
+    let allMetadata = {};
+    
+    // Read existing metadata if file exists
+    if (fs.existsSync(metadataPath)) {
+      allMetadata = await fs.readJson(metadataPath);
+    }
+    
+    // Update metadata for the specified remote
+    allMetadata[remoteName] = metadata;
+    
+    // Write updated metadata back to file
+    await fs.writeJson(metadataPath, allMetadata, { spaces: 2 });
+    
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Delete remote metadata
+ipcMain.handle('delete-remote-metadata', async (event, remoteName) => {
+  const metadataPath = path.join(appConfig.workspace_dir, 'remote-meta.json');
+  
+  try {
+    if (fs.existsSync(metadataPath)) {
+      const allMetadata = await fs.readJson(metadataPath);
+      
+      // Delete metadata for the specified remote
+      if (allMetadata[remoteName]) {
+        delete allMetadata[remoteName];
+        
+        // Write updated metadata back to file
+        await fs.writeJson(metadataPath, allMetadata, { spaces: 2 });
+      }
+    }
+    
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Exit application
+ipcMain.handle('exit-app', () => {
+  terminateAllProcesses();
+  killAllRcloneProcesses();
+  app.quit();
+});

@@ -1,0 +1,34 @@
+Env:  app need 2 enviromental parameters
+1. path_rlcone = /usr/local/bin/rclone # where rclone installed
+2. workspace_dir = /tmp/pf-workspace # where app store all .conf, .meta and .log files
+
+What it does:
+this app make rclone config and construct seriease of rclone command to sync files from cloud storage including local defined in cloud.conf to S3 defined in pf.conf
+consist of following main functins. Arrange then professional looking sidebar navigation. 
+
+1. Cloud Config: 
+    (1) Add cloud
+    provide selection of drive, box, onedrive and local for rclone type.
+    Add button invoke "rclone config create ${remotename} type --config workspace_dir/cloud.conf
+    (2) List cloud
+    List existing remote defined in cloud.conf
+    with subfunctions, 
+      subfolder: add subfolder to limit scope of remote, text box is good.
+      check remote: run "rclone lsd ${remotename}: --config workspace_dir/cloud.conf" show the output
+      delete: remove the remote from cloud.conf
+2. PageFinder Config:
+    (1) Read conf file downloaded from PageFinder
+    browse and select a local file. e.g. my.conf
+    check if it were valid for rclone, if good just copy to workspace_dir/pf.conf
+    (2) Test connection
+    run "rclone lsd ${pfname}:${bucket}/${prefix}/${pfname} --config workspace_dir/pf.conf" and show the result
+    (3) Purge: remove orphan folder from PageFinder
+    (1) Test: run "scripts/purge.sh" show purge.log (purge.sh produce purge.log in workspace_dir)
+    (2) Exec: If test were successful activate it. run "scripts/purge.sh -e", warn and ask confirmation and then exec, show purge.log 
+3. sync
+    (1) Test: run "scripts/sync.sh" and show sync.log in workspace_dir
+    (2) Exec: only if test were successful activate it. run "scripts/sync.sh -e", show sync.log
+4. schedule
+    Setup batch job to setup env and run "script/sync.sh -e"
+    Show sync.log
+5. Exit end the application, terminate related process if there were any.
