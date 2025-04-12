@@ -3,11 +3,12 @@
 # This script synchronizes data between cloud storage and PageFinder
 # It can be run in dry-run mode (default) or execution mode (-e flag)
 
-# Set the working directory with absolute path
-WORKDIR='/tmp/pf-config'
-if [ -n "$WORKDIR" ]; then
-  WORKDIR="$WORKDIR"
-fi
+# Load environment variables from .env file
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/env-loader.sh"
+
+# Set the working directory from environment variable
+WORKDIR="$WORKSPACE_DIR"
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 LOGFILE="$WORKDIR/sync.log"
 
@@ -163,8 +164,40 @@ echo "$CLOUD_SECTIONS" | while read -r CLOUDNAME; do
     log_message "Processing cloud storage: $CLOUDNAME"
     # Get subfolder from metadata if available
     if [ -f "$METADATA_JSON" ]; then
-        # Extract subfolder for this cloud storage from metadata.json using a simple grep and cut approach
-        SUBFOLDER=$(grep -A 10 "\"$CLOUDNAME\":" "$METADATA_JSON" | grep "\"subfolder\":" | head -1 | cut -d'"' -f4)
+        # Extract subfolder for this cloud storage from metadata.json using a proper JSON parsing approach
+        # Try jq first, if not available fall back to Python, then to a simple grep approach
+        if command -v jq &> /dev/null; then
+            # Use jq to extract the subfolder
+            SUBFOLDER=$(jq -r ".[\"$CLOUDNAME\"].subfolder // \"\"" "$METADATA_JSON")
+        elif command -v python3 &> /dev/null; then
+            # Use Python to extract the subfolder
+            SUBFOLDER=$(python3 -c "
+import json, sys
+try:
+    with open('$METADATA_JSON', 'r') as f:
+        data = json.load(f)
+    print(data.get('$CLOUDNAME', {}).get('subfolder', ''))
+except Exception as e:
+    print('', file=sys.stderr)
+    exit(0)
+")
+        elif command -v python &> /dev/null; then
+            # Try with python if python3 is not available
+            SUBFOLDER=$(python -c "
+import json, sys
+try:
+    with open('$METADATA_JSON', 'r') as f:
+        data = json.load(f)
+    print(data.get('$CLOUDNAME', {}).get('subfolder', ''))
+except Exception as e:
+    print('', file=sys.stderr)
+    exit(0)
+")
+        else
+            # Fallback to grep/sed approach if neither jq nor python is available
+            log_message "Warning: Neither jq nor python is available for proper JSON parsing. Using fallback method."
+            SUBFOLDER=$(grep -A 10 "\"$CLOUDNAME\":" "$METADATA_JSON" | grep "\"subfolder\":" | head -1 | sed -E 's/.*"subfolder"[[:space:]]*:[[:space:]]*"([^"]*).*/\1/')
+        fi
         
         if [ -n "$SUBFOLDER" ]; then
             log_message "Found subfolder in metadata: $SUBFOLDER for $CLOUDNAME"
@@ -191,9 +224,9 @@ echo "$CLOUD_SECTIONS" | while read -r CLOUDNAME; do
     
     # Construct the rclone command
     if [ "$EXECUTE_MODE" = true ]; then
-        RCLONE_CMD="rclone sync $CLOUD_PATH $PF_PATH --config $RCLONE_CONF"
+        RCLONE_CMD="$RCLONE_PATH sync $CLOUD_PATH $PF_PATH --config $RCLONE_CONF"
     else
-        RCLONE_CMD="rclone sync $CLOUD_PATH $PF_PATH --dry-run --config $RCLONE_CONF"
+        RCLONE_CMD="$RCLONE_PATH sync $CLOUD_PATH $PF_PATH --dry-run --config $RCLONE_CONF"
     fi
     
     log_message "Executing command: $RCLONE_CMD"

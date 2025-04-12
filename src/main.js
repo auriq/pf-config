@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs-extra');
 const { spawn, exec } = require('child_process');
-const os = require('os');
+const { config, loadConfig, updateConfig } = require('./config');
 
 // Keep a global reference of the window object to prevent garbage collection
 let mainWindow;
@@ -10,41 +10,15 @@ let mainWindow;
 // Keep track of all running processes
 const runningProcesses = new Set();
 
-// Default environmental parameters
-let appConfig = {
-  path_rclone: '/usr/local/bin/rclone',
-  workspace_dir: '/tmp/pf-workspace'
-};
-
-// Determine platform-specific default workspace directory
-if (process.platform === 'win32') {
-  appConfig.path_rclone = 'rclone.exe'; // Assume it's in PATH on Windows
-  appConfig.workspace_dir = path.join(os.homedir(), 'AppData', 'Roaming', 'pf-config');
-} else if (process.platform === 'darwin') {
-  appConfig.workspace_dir = path.join(os.homedir(), '.config', 'pf-config');
-}
+// Load configuration
+let appConfig = loadConfig();
 
 // Ensure workspace directory exists
 fs.ensureDirSync(appConfig.workspace_dir);
 
-// Load configuration if it exists
-const configPath = path.join(appConfig.workspace_dir, 'app-config.json');
-if (fs.existsSync(configPath)) {
-  try {
-    const savedConfig = fs.readJsonSync(configPath);
-    appConfig = { ...appConfig, ...savedConfig };
-  } catch (error) {
-    console.error('Error loading configuration:', error);
-  }
-}
-
 // Save configuration
 function saveConfig() {
-  try {
-    fs.writeJsonSync(configPath, appConfig, { spaces: 2 });
-  } catch (error) {
-    console.error('Error saving configuration:', error);
-  }
+  appConfig = updateConfig(appConfig);
 }
 
 // Create the main window

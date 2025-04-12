@@ -27,10 +27,11 @@ const syncExecBtn = document.getElementById('sync-exec-btn');
 const syncResult = document.getElementById('sync-result');
 
 // Schedule Elements
-const scheduleIntervalSelect = document.getElementById('schedule-interval');
+const scheduleTimeInput = document.getElementById('schedule-time');
 const setupScheduleBtn = document.getElementById('setup-schedule-btn');
 const scheduleResult = document.getElementById('schedule-result');
 const lastSyncLog = document.getElementById('last-sync-log');
+const reloadSyncLogBtn = document.getElementById('reload-sync-log-btn');
 
 // Settings Elements
 const rclonePathInput = document.getElementById('rclone-path');
@@ -738,14 +739,14 @@ async function executeSync() {
 
 // Set up schedule
 setupScheduleBtn.addEventListener('click', async () => {
-  const interval = scheduleIntervalSelect.value;
+  const time = scheduleTimeInput.value;
   
   // Show loading state
   setupScheduleBtn.disabled = true;
   setupScheduleBtn.textContent = 'Setting up...';
   
   try {
-    const result = await window.api.setupSchedule(interval);
+    const result = await window.api.setupSchedule(time);
     
     // Show result
     scheduleResult.style.display = 'block';
@@ -766,6 +767,22 @@ setupScheduleBtn.addEventListener('click', async () => {
     setupScheduleBtn.disabled = false;
     setupScheduleBtn.textContent = 'Set Up Schedule';
   }
+});
+
+// Reload sync log button
+reloadSyncLogBtn.addEventListener('click', async () => {
+  // Show loading state
+  reloadSyncLogBtn.disabled = true;
+  lastSyncLog.innerHTML = '<div class="empty-log-message">Loading sync log...</div>';
+  
+  // Load the sync log
+  await loadLastSyncLog();
+  
+  // Reset button state
+  reloadSyncLogBtn.disabled = false;
+  
+  // Show notification
+  showInfoNotification('Sync log reloaded');
 });
 
 // Load last sync log

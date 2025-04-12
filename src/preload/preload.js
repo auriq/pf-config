@@ -243,18 +243,23 @@ contextBridge.exposeInMainWorld(
     },
     
     // Schedule operations
-    setupSchedule: async (interval) => {
-      // Platform-specific scheduling
-      const platform = process.platform;
+    setupSchedule: async (time) => {
+      // Validate time format (HH:MM)
+      const timePattern = /^([0-1][0-9]|2[0-3]):([0-5][0-9])$/;
+      if (!timePattern.test(time)) {
+        return { success: false, error: 'Invalid time format. Please use HH:MM in 24-hour format.' };
+      }
       
-      if (platform === 'win32') {
-        // Windows Task Scheduler
-        // This would typically use a PowerShell script or schtasks command
-        return { success: false, error: 'Windows scheduling not implemented yet' };
-      } else {
-        // macOS/Linux crontab
-        // This would typically use a shell script to add a cron job
-        return { success: false, error: 'Unix scheduling not implemented yet' };
+      try {
+        // Use the relative path to the setup-sync-cron.sh script
+        const scriptPath = 'scripts/setup-sync-cron.sh';
+        
+        // Execute the script with the time parameter
+        const result = await ipcRenderer.invoke('execute-script', scriptPath, [time]);
+        
+        return result;
+      } catch (error) {
+        return { success: false, error: error.message };
       }
     }
   }

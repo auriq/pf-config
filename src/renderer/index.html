@@ -136,20 +136,20 @@
         <div class="card">
           <h3>Set Up Scheduled Sync</h3>
           <div class="form-group">
-            <label for="schedule-interval">Sync Interval:</label>
-            <select id="schedule-interval">
-              <option value="hourly">Hourly</option>
-              <option value="daily" selected>Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-            </select>
+            <label for="schedule-time">Sync Time (HH:MM):</label>
+            <input type="time" id="schedule-time" value="03:00" required>
           </div>
           <button id="setup-schedule-btn" class="btn btn-primary">Set Up Schedule</button>
           <div id="schedule-result" class="result-container"></div>
         </div>
         
         <div class="card">
-          <h3>Last Sync Log</h3>
+          <div class="card-header-with-action">
+            <h3>Last Sync Log</h3>
+            <button id="reload-sync-log-btn" class="btn btn-secondary" title="Reload sync log">
+              <span class="nav-icon">🔄</span>
+            </button>
+          </div>
           <div id="last-sync-log" class="log-container">
             <div class="empty-log-message">No sync log available.</div>
           </div>

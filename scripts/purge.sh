@@ -3,11 +3,12 @@
 # This script detects and purges orphaned directories in PageFinder
 # It can be run in dry-run mode (default) or execution mode (-e flag)
 
-# Set the working directory with absolute path
-WORKDIR='/tmp/pf-config'
-if [ -n "$WORKDIR" ]; then
-  WORKDIR="$WORKDIR"
-fi
+# Load environment variables from .env file
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/env-loader.sh"
+
+# Set the working directory from environment variable
+WORKDIR="$WORKSPACE_DIR"
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 LOGFILE="$WORKDIR/purge.log"
 
@@ -90,7 +91,7 @@ log_message "PageFinder base path: $PF_BASE_PATH"
 
 # Step 1: Find folders in destination
 log_message "Finding folders in destination..."
-DEST_FOLDERS_CMD="rclone lsd $PF_BASE_PATH --config $PF_CONF"
+DEST_FOLDERS_CMD="$RCLONE_PATH lsd $PF_BASE_PATH --config $PF_CONF"
 log_message "Executing: $DEST_FOLDERS_CMD"
 
 DEST_FOLDERS_OUTPUT=$(eval "$DEST_FOLDERS_CMD" 2>&1)
@@ -219,9 +220,9 @@ else
         
         # Construct the purge command
         if [ "$EXECUTE_MODE" = true ]; then
-            PURGE_CMD="rclone purge $PF_BASE_PATH/$orphan --config $PF_CONF"
+            PURGE_CMD="$RCLONE_PATH purge $PF_BASE_PATH/$orphan --config $PF_CONF"
         else
-            PURGE_CMD="rclone purge $PF_BASE_PATH/$orphan --dry-run --config $PF_CONF"
+            PURGE_CMD="$RCLONE_PATH purge $PF_BASE_PATH/$orphan --dry-run --config $PF_CONF"
         fi
         
         log_message "Executing: $PURGE_CMD"
