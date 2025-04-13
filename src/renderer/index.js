@@ -55,7 +55,7 @@ let notificationContainer;
 let remoteMetadata = {};
 
 // Maximum number of remotes allowed
-const MAX_REMOTES = 2;
+const MAX_REMOTES = 3;
 
 // Initialize the application
 async function initApp() {
@@ -629,9 +629,16 @@ purgeTestBtn.addEventListener('click', async () => {
 });
 
 // Execute purge
-purgeExecBtn.addEventListener('click', async () => {
-  // Execute without confirmation
-  await executePurge();
+purgeExecBtn.addEventListener('click', () => {
+  // Show confirmation dialog before executing
+  showConfirmationModal(
+    'Confirm Purge Operation',
+    'WARNING: This will permanently delete all data in the workspace directory. This action cannot be undone. Are you sure you want to proceed?',
+    async () => {
+      // Only execute if confirmed
+      await executePurge();
+    }
+  );
 });
 
 // Execute purge (confirmed)

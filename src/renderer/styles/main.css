@@ -33,16 +33,26 @@ body {
   flex-direction: column;
   height: 100%;
 }
-
 .logo {
-  padding: 20px;
-  text-align: center;
+  padding: 15px;
+  display: flex;
+  align-items: center;
   border-bottom: 1px solid #34495e;
 }
 
+.logo-image {
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
+}
 .logo h2 {
   font-size: 1.5rem;
   font-weight: 500;
+  color: white;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  height: 40px; /* Same height as the logo image */
 }
 
 .nav-menu {
