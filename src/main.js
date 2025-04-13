@@ -189,12 +189,42 @@ ipcMain.handle('cleanup-rclone', async () => {
 // Execute shell script
 ipcMain.handle('execute-script', async (event, scriptPath, args = []) => {
   return new Promise((resolve, reject) => {
-    const scriptProcess = spawn(scriptPath, args, {
-      env: {
-        ...process.env,
-        WORKDIR: appConfig.workspace_dir,
-        PATH_RCLONE: appConfig.path_rclone
-      }
+    // On macOS, explicitly use /bin/bash to execute shell scripts
+    let command;
+    let scriptArgs;
+    
+    if (process.platform === 'darwin' && scriptPath.endsWith('.sh')) {
+      command = '/bin/bash';
+      scriptArgs = [scriptPath, ...args];
+      console.log(`Using explicit bash interpreter: ${command} ${scriptArgs.join(' ')}`);
+    } else {
+      command = scriptPath;
+      scriptArgs = args;
+    }
+    
+    // Set up environment variables
+    const env = {
+      ...process.env,
+      WORKDIR: appConfig.workspace_dir,
+      PATH_RCLONE: appConfig.path_rclone,
+      // Add PATH to ensure system commands are available
+      PATH: process.env.PATH || '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin'
+    };
+    
+    // Add SCRIPTS_PATH if it exists in appConfig
+    if (appConfig.scripts_path) {
+      env.SCRIPTS_PATH = appConfig.scripts_path;
+      console.log(`Added SCRIPTS_PATH to environment: ${env.SCRIPTS_PATH}`);
+    }
+    
+    console.log(`Environment variables for script execution:`);
+    console.log(`WORKDIR: ${env.WORKDIR}`);
+    console.log(`PATH_RCLONE: ${env.PATH_RCLONE}`);
+    if (env.SCRIPTS_PATH) console.log(`SCRIPTS_PATH: ${env.SCRIPTS_PATH}`);
+    
+    const scriptProcess = spawn(command, scriptArgs, {
+      env,
+      shell: true // Use shell for better script compatibility
     });
     
     // Add to running processes
