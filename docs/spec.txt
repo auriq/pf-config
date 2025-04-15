@@ -23,12 +23,12 @@ consist of following main functins. Arrange then professional looking sidebar na
     (2) Test connection
     run "rclone lsd ${pfname}:${bucket}/${prefix}/${pfname} --config workspace_dir/pf.conf" and show the result
     (3) Purge: remove orphan folder from PageFinder
-    (1) Test: run "scripts/purge.sh" show purge.log (purge.sh produce purge.log in workspace_dir)
-    (2) Exec: If test were successful activate it. run "scripts/purge.sh -e", warn and ask confirmation and then exec, show purge.log 
+    (1) Test: run "scripts/purge-workspace.sh" show purge.log (purge-workspace.sh produce purge.log in workspace_dir)
+    (2) Exec: If test were successful activate it. run "scripts/purge-workspace.sh -e", warn and ask confirmation and then exec, show purge.log
 3. sync
-    (1) Test: run "scripts/sync.sh" and show sync.log in workspace_dir
-    (2) Exec: only if test were successful activate it. run "scripts/sync.sh -e", show sync.log
+    (1) Test: run "scripts/sync-workspace.sh" and show sync.log in workspace_dir
+    (2) Exec: only if test were successful activate it. run "scripts/sync-workspace.sh -e", show sync.log
 4. schedule
-    Setup batch job to setup env and run "script/sync.sh -e"
+    Setup batch job to setup env and run "script/sync-workspace.sh -e"
     Show sync.log
 5. Exit end the application, terminate related process if there were any.

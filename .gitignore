@@ -106,6 +106,7 @@ dist
 # Electron build output
 dist/
 out/
+build/scripts/
 
 # macOS
 .DS_Store

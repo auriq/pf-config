@@ -6,15 +6,18 @@
   "scripts": {
     "start": "electron .",
     "dev": "NODE_ENV=development electron .",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder",
-    "dist:mac": "electron-builder --mac",
-    "dist:win": "electron-builder --win",
-    "dist:linux": "electron-builder --linux",
-    "dist:all": "electron-builder -mwl",
+    "prepare-build": "node scripts/prepare-for-build.js",
+    "pack": "npm run prepare-build && electron-builder --dir",
+    "dist": "npm run prepare-build && electron-builder",
+    "dist:mac": "npm run prepare-build && electron-builder --mac",
+    "dist:win": "npm run prepare-build && electron-builder --win",
+    "dist:linux": "npm run prepare-build && electron-builder --linux",
+    "dist:all": "npm run prepare-build && electron-builder -mwl",
     "test": "jest",
     "fix:permissions": "scripts/fix-permissions.sh",
-    "generate:icons": "node scripts/generate-icons.js"
+    "generate:icons": "node scripts/generate-icons.js",
+    "debug:config": "electron -r ./scripts/debug-config.js .",
+    "debug:prod": "scripts/debug-production.sh"
   },
   "keywords": [
     "rclone",
@@ -42,6 +45,17 @@
     "asar": true,
     "asarUnpack": [
       "node_modules/fs-extra"
+    ],
+    "extraResources": [
+      {
+        "from": "scripts",
+        "to": "scripts",
+        "filter": ["**/*"]
+      },
+      {
+        "from": ".env",
+        "to": ".env"
+      }
     ],
     "files": [
       "**/*",

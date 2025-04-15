@@ -122,20 +122,20 @@ The application will have a professional-looking sidebar navigation with the fol
 
 #### 5.2.3 Purge Orphan Folders
 
-- Test: Button to run `scripts/purge.sh` and display the purge.log
-- Execute: Button to run `scripts/purge.sh -e` with confirmation dialog
+- Test: Button to run `scripts/purge-workspace.sh` and display the purge.log
+- Execute: Button to run `scripts/purge-workspace.sh -e` with confirmation dialog
 - Display the purge.log in the UI
 
 ### 5.3 Sync
 
-- Test: Button to run `scripts/sync.sh` and display the sync.log
-- Execute: Button to run `scripts/sync.sh -e` (only enabled if test was successful)
+- Test: Button to run `scripts/sync-workspace.sh` and display the sync.log
+- Execute: Button to run `scripts/sync-workspace.sh -e` (only enabled if test was successful)
 - Display the sync.log in the UI
 - Progress indicator for long-running sync operations
 
 ### 5.4 Schedule
 
-- Interface to set up a scheduled job for running `scripts/sync.sh -e`
+- Interface to set up a scheduled job for running `scripts/sync-workspace.sh -e`
 - Platform-specific implementation:
   - macOS/Linux: Set up cron jobs
   - Windows: Set up Windows Task Scheduler tasks

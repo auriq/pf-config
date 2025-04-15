@@ -219,26 +219,26 @@ contextBridge.exposeInMainWorld(
     // Purge operations
     runPurgeTest: async () => {
       const config = await ipcRenderer.invoke('get-config');
-      const scriptPath = 'scripts/purge.sh';
+      const scriptPath = 'scripts/purge-workspace.sh';
       return ipcRenderer.invoke('execute-script', scriptPath, []);
     },
-    
     runPurgeExec: async () => {
       const config = await ipcRenderer.invoke('get-config');
-      const scriptPath = 'scripts/purge.sh';
+      const scriptPath = 'scripts/purge-workspace.sh';
+      return ipcRenderer.invoke('execute-script', scriptPath, ['-e']);
       return ipcRenderer.invoke('execute-script', scriptPath, ['-e']);
     },
     
     // Sync operations
     runSyncTest: async () => {
       const config = await ipcRenderer.invoke('get-config');
-      const scriptPath = 'scripts/sync.sh';
+      const scriptPath = 'scripts/sync-workspace.sh';
       return ipcRenderer.invoke('execute-script', scriptPath, []);
     },
     
     runSyncExec: async () => {
       const config = await ipcRenderer.invoke('get-config');
-      const scriptPath = 'scripts/sync.sh';
+      const scriptPath = 'scripts/sync-workspace.sh';
       return ipcRenderer.invoke('execute-script', scriptPath, ['-e']);
     },
     

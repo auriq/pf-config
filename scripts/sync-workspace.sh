@@ -12,44 +12,11 @@ echo "BASH_SOURCE: ${BASH_SOURCE[0]}"
 echo "Environment variables:"
 env | sort
 
-# Try to find where "/Applications/PageFinder" might be coming from
-echo "===== SEARCHING FOR PROBLEMATIC PATH ====="
-echo "Checking if /Applications/PageFinder exists:"
-if [ -d "/Applications/PageFinder" ]; then
-  echo "Directory /Applications/PageFinder exists"
-else
-  echo "Directory /Applications/PageFinder does not exist"
-fi
-
-echo "Checking if /Applications/PageFinder Configuration.app exists:"
-if [ -d "/Applications/PageFinder Configuration.app" ]; then
-  echo "Directory /Applications/PageFinder Configuration.app exists"
-else
-  echo "Directory /Applications/PageFinder Configuration.app does not exist"
-fi
-
-echo "Checking process information:"
-ps -ef | grep PageFinder
-
-echo "Checking environment for PageFinder:"
-env | grep -i pagefinder
-
-echo "===== END DEBUG INFO ====="
-
 # Avoid using BASH_SOURCE which might cause issues
 # Instead, use the SCRIPTS_PATH environment variable if available
 if [ -n "$SCRIPTS_PATH" ]; then
     SCRIPT_DIR="$SCRIPTS_PATH"
     echo "Using SCRIPTS_PATH from environment: $SCRIPT_DIR"
-# Check if /Applications/PageFinder Configuration.app exists
-elif [ -d "/Applications/PageFinder Configuration.app" ]; then
-    echo "Found application at: /Applications/PageFinder Configuration.app"
-    # Set SCRIPT_DIR to the scripts directory in the application bundle
-    SCRIPT_DIR="/Applications/PageFinder Configuration.app/Contents/Resources/scripts"
-    echo "Setting SCRIPT_DIR to: $SCRIPT_DIR"
-    # Also set SCRIPTS_PATH for other scripts
-    SCRIPTS_PATH="$SCRIPT_DIR"
-    echo "Setting SCRIPTS_PATH to: $SCRIPTS_PATH"
 else
     # Fallback to relative path resolution
     SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
