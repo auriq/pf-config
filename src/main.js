@@ -296,8 +296,23 @@ ipcMain.handle('execute-script', async (event, scriptPath, args = []) => {
     let command;
     if (process.platform === 'darwin' && resolvedScriptPath.endsWith('.sh')) {
       command = `bash "${resolvedScriptPath}" ${args.join(' ')}`;
-    } else if (process.platform === 'win32' && resolvedScriptPath.endsWith('.ps1')) {
-      command = `powershell -ExecutionPolicy Bypass -File "${resolvedScriptPath}" ${args.join(' ')}`;
+    } else if (process.platform === 'win32') {
+      if (resolvedScriptPath.endsWith('.ps1')) {
+        command = `powershell -ExecutionPolicy Bypass -File "${resolvedScriptPath}" ${args.join(' ')}`;
+      } else if (resolvedScriptPath.endsWith('.bat')) {
+        command = `"${resolvedScriptPath}" ${args.join(' ')}`;
+      } else if (resolvedScriptPath.endsWith('.sh')) {
+        // Try to use WSL bash if available, otherwise use regular command
+        try {
+          fs.accessSync('C:\\Windows\\System32\\bash.exe', fs.constants.X_OK);
+          command = `bash "${resolvedScriptPath}" ${args.join(' ')}`;
+        } catch (error) {
+          console.warn(`WSL bash not found, trying to execute .sh script directly: ${error.message}`);
+          command = `"${resolvedScriptPath}" ${args.join(' ')}`;
+        }
+      } else {
+        command = `"${resolvedScriptPath}" ${args.join(' ')}`;
+      }
     } else {
       command = `"${resolvedScriptPath}" ${args.join(' ')}`;
     }

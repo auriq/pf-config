@@ -1,6 +1,6 @@
 {
   "name": "pf-config",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "Application for configuring cloud storage connections with PageFinder",
   "main": "src/main.js",
   "scripts": {
@@ -17,7 +17,15 @@
     "fix:permissions": "scripts/fix-permissions.sh",
     "generate:icons": "node scripts/generate-icons.js",
     "debug:config": "electron -r ./scripts/debug-config.js .",
-    "debug:prod": "scripts/debug-production.sh"
+    "debug:prod": "scripts/debug-production.sh",
+    "debug:prod:win": "powershell -ExecutionPolicy Bypass -File scripts/debug-production.ps1",
+    "debug:prod:win:bat": "scripts\\debug-production.bat",
+    "sync": "scripts/sync-workspace.sh",
+    "sync:win": "powershell -ExecutionPolicy Bypass -File scripts/sync-workspace.ps1",
+    "purge": "scripts/purge-workspace.sh",
+    "purge:win": "powershell -ExecutionPolicy Bypass -File scripts/purge-workspace.ps1",
+    "setup-cron": "scripts/setup-sync-cron.sh",
+    "setup-cron:win": "powershell -ExecutionPolicy Bypass -File scripts/setup-sync-cron.ps1"
   },
   "keywords": [
     "rclone",
