@@ -11,6 +11,9 @@ fi
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 APP_DIR="$(dirname "$SCRIPT_DIR")"
 
+# Load environment variables
+source "$SCRIPT_DIR/env-loader.sh"
+
 echo "PageFinder Configuration - Permission Fix Script"
 echo "==============================================="
 echo "App directory: $APP_DIR"
@@ -31,50 +34,63 @@ chmod +x "$RCLONE_PATH"
 echo "Done."
 
 # Create configuration directory
-CONFIG_DIR="$HOME/.config/pf-config"
-echo "Creating configuration directory: $CONFIG_DIR"
-mkdir -p "$CONFIG_DIR"
-chmod 755 "$CONFIG_DIR"
+# Use WORKSPACE_DIR from environment or set default if not available
+WORKSPACE_DIR=${WORKSPACE_DIR:-"$HOME/.config/pf-config"}
+echo "Creating configuration directory: $WORKSPACE_DIR"
+mkdir -p "$WORKSPACE_DIR"
+chmod 755 "$WORKSPACE_DIR"
 echo "Done."
 
 # Create default configuration files if they don't exist
-if [ ! -f "$CONFIG_DIR/cloud.conf" ]; then
+if [ ! -f "$WORKSPACE_DIR/cloud.conf" ]; then
   echo "Creating default cloud.conf..."
-  cat > "$CONFIG_DIR/cloud.conf" << EOF
+  cat > "$WORKSPACE_DIR/cloud.conf" << EOF
 # PageFinder Cloud Configuration
 # Add your cloud storage configurations here
 EOF
-  chmod 644 "$CONFIG_DIR/cloud.conf"
+  chmod 644 "$WORKSPACE_DIR/cloud.conf"
   echo "Done."
 fi
 
-if [ ! -f "$CONFIG_DIR/pf.conf" ]; then
+if [ ! -f "$WORKSPACE_DIR/pf.conf" ]; then
   echo "Creating default pf.conf..."
-  cat > "$CONFIG_DIR/pf.conf" << EOF
+  cat > "$WORKSPACE_DIR/pf.conf" << EOF
 # PageFinder S3 Configuration
 # Add your PageFinder configuration here
 EOF
-  chmod 644 "$CONFIG_DIR/pf.conf"
+  chmod 644 "$WORKSPACE_DIR/pf.conf"
   echo "Done."
 fi
 
 # Create app-config.json if it doesn't exist
-if [ ! -f "$CONFIG_DIR/app-config.json" ]; then
+if [ ! -f "$WORKSPACE_DIR/app-config.json" ]; then
   echo "Creating default app-config.json..."
-  cat > "$CONFIG_DIR/app-config.json" << EOF
+  cat > "$WORKSPACE_DIR/app-config.json" << EOF
 {
   "path_rclone": "$RCLONE_PATH",
-  "workspace_dir": "$CONFIG_DIR"
+  "workspace_dir": "$WORKSPACE_DIR"
 }
 EOF
-  chmod 644 "$CONFIG_DIR/app-config.json"
+  chmod 644 "$WORKSPACE_DIR/app-config.json"
   echo "Done."
 fi
 
 # Fix permissions for scripts
 echo "Fixing permissions for scripts..."
-chmod +x "$SCRIPT_DIR/purge.sh"
-chmod +x "$SCRIPT_DIR/sync.sh"
+chmod +x "$SCRIPT_DIR/purge-workspace.sh"
+chmod +x "$SCRIPT_DIR/sync-workspace.sh"
+echo "Done."
+
+# Create scripts directory in workspace and copy scripts there
+echo "Creating scripts directory in workspace..."
+mkdir -p "$WORKSPACE_DIR/scripts"
+chmod 755 "$WORKSPACE_DIR/scripts"
+
+echo "Copying scripts to workspace..."
+cp "$SCRIPT_DIR/purge-workspace.sh" "$WORKSPACE_DIR/scripts/"
+cp "$SCRIPT_DIR/sync-workspace.sh" "$WORKSPACE_DIR/scripts/"
+chmod +x "$WORKSPACE_DIR/scripts/purge-workspace.sh"
+chmod +x "$WORKSPACE_DIR/scripts/sync-workspace.sh"
 echo "Done."
 
 echo "All permissions fixed successfully!"

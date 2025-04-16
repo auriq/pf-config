@@ -1,20 +1,31 @@
 {
   "name": "pf-config",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "Application for configuring cloud storage connections with PageFinder",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
     "dev": "NODE_ENV=development electron .",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder",
-    "dist:mac": "electron-builder --mac",
-    "dist:win": "electron-builder --win",
-    "dist:linux": "electron-builder --linux",
-    "dist:all": "electron-builder -mwl",
+    "prepare-build": "node scripts/prepare-for-build.js",
+    "pack": "npm run prepare-build && electron-builder --dir",
+    "dist": "npm run prepare-build && electron-builder",
+    "dist:mac": "npm run prepare-build && electron-builder --mac",
+    "dist:win": "npm run prepare-build && electron-builder --win",
+    "dist:linux": "npm run prepare-build && electron-builder --linux",
+    "dist:all": "npm run prepare-build && electron-builder -mwl",
     "test": "jest",
     "fix:permissions": "scripts/fix-permissions.sh",
-    "generate:icons": "node scripts/generate-icons.js"
+    "generate:icons": "node scripts/generate-icons.js",
+    "debug:config": "electron -r ./scripts/debug-config.js .",
+    "debug:prod": "scripts/debug-production.sh",
+    "debug:prod:win": "powershell -ExecutionPolicy Bypass -File scripts/debug-production.ps1",
+    "debug:prod:win:bat": "scripts\\debug-production.bat",
+    "sync": "scripts/sync-workspace.sh",
+    "sync:win": "powershell -ExecutionPolicy Bypass -File scripts/sync-workspace.ps1",
+    "purge": "scripts/purge-workspace.sh",
+    "purge:win": "powershell -ExecutionPolicy Bypass -File scripts/purge-workspace.ps1",
+    "setup-cron": "scripts/setup-sync-cron.sh",
+    "setup-cron:win": "powershell -ExecutionPolicy Bypass -File scripts/setup-sync-cron.ps1"
   },
   "keywords": [
     "rclone",
@@ -42,6 +53,17 @@
     "asar": true,
     "asarUnpack": [
       "node_modules/fs-extra"
+    ],
+    "extraResources": [
+      {
+        "from": "scripts",
+        "to": "scripts",
+        "filter": ["**/*"]
+      },
+      {
+        "from": ".env",
+        "to": ".env"
+      }
     ],
     "files": [
       "**/*",

@@ -3,9 +3,49 @@
 # This script detects and purges orphaned directories in PageFinder
 # It can be run in dry-run mode (default) or execution mode (-e flag)
 
-# Load environment variables from .env file
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/env-loader.sh"
+# Add extensive debugging
+echo "===== PURGE SCRIPT DEBUG INFO ====="
+echo "Current directory: $(pwd)"
+echo "Script path: $0"
+echo "Script arguments: $@"
+echo "BASH_SOURCE: ${BASH_SOURCE[0]}"
+echo "Environment variables:"
+env | sort
+
+# Avoid using BASH_SOURCE which might cause issues
+# Instead, use the SCRIPTS_PATH environment variable if available
+if [ -n "$SCRIPTS_PATH" ]; then
+    SCRIPT_DIR="$SCRIPTS_PATH"
+    echo "Using SCRIPTS_PATH from environment: $SCRIPT_DIR"
+else
+    # Fallback to relative path resolution
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+    echo "Using relative path resolution: $SCRIPT_DIR"
+fi
+
+# Check if env-loader.sh exists
+if [ -f "$SCRIPT_DIR/env-loader.sh" ]; then
+    echo "Loading environment from: $SCRIPT_DIR/env-loader.sh"
+    source "$SCRIPT_DIR/env-loader.sh"
+else
+    echo "Warning: env-loader.sh not found at $SCRIPT_DIR/env-loader.sh"
+    # Set default values
+    RCLONE_PATH=${RCLONE_PATH:-"/usr/local/bin/rclone"}
+    WORKSPACE_DIR=${WORKSPACE_DIR:-"$HOME/.config/pf-config"}
+    
+    # If SCRIPTS_PATH is not set, try to set it based on the current script location
+    if [ -z "$SCRIPTS_PATH" ]; then
+        SCRIPTS_PATH="$SCRIPT_DIR"
+        echo "Setting SCRIPTS_PATH to: $SCRIPTS_PATH"
+    fi
+    
+    # Ensure workspace directory exists
+    mkdir -p "$WORKSPACE_DIR"
+    
+    echo "Using default environment variables:"
+    echo "RCLONE_PATH=$RCLONE_PATH"
+    echo "WORKSPACE_DIR=$WORKSPACE_DIR"
+fi
 
 # Set the working directory from environment variable
 WORKDIR="$WORKSPACE_DIR"
@@ -58,7 +98,13 @@ fi
 # Paths to configuration files
 CLOUD_CONF="$WORKDIR/cloud.conf"
 PF_CONF="$WORKDIR/pf.conf"
+RCLONE_CONF="$WORKDIR/rclone.conf"
 METADATA_JSON="$WORKDIR/remote-meta.json"
+
+# Combine cloud.conf and pf.conf to create rclone.conf
+log_message "Combining configuration files to create rclone.conf"
+cat "$CLOUD_CONF" "$PF_CONF" > "$RCLONE_CONF"
+log_message "Combined configuration created at $RCLONE_CONF"
 
 # Check if configuration files exist
 if [ ! -f "$CLOUD_CONF" ]; then
@@ -91,7 +137,8 @@ log_message "PageFinder base path: $PF_BASE_PATH"
 
 # Step 1: Find folders in destination
 log_message "Finding folders in destination..."
-DEST_FOLDERS_CMD="$RCLONE_PATH lsd $PF_BASE_PATH --config $PF_CONF"
+log_message "Using rclone config: $RCLONE_CONF"
+DEST_FOLDERS_CMD="$RCLONE_PATH lsd $PF_BASE_PATH --config $RCLONE_CONF"
 log_message "Executing: $DEST_FOLDERS_CMD"
 
 DEST_FOLDERS_OUTPUT=$(eval "$DEST_FOLDERS_CMD" 2>&1)
@@ -220,9 +267,9 @@ else
         
         # Construct the purge command
         if [ "$EXECUTE_MODE" = true ]; then
-            PURGE_CMD="$RCLONE_PATH purge $PF_BASE_PATH/$orphan --config $PF_CONF"
+            PURGE_CMD="$RCLONE_PATH purge $PF_BASE_PATH/$orphan --config $RCLONE_CONF"
         else
-            PURGE_CMD="$RCLONE_PATH purge $PF_BASE_PATH/$orphan --dry-run --config $PF_CONF"
+            PURGE_CMD="$RCLONE_PATH purge $PF_BASE_PATH/$orphan --dry-run --config $RCLONE_CONF"
         fi
         
         log_message "Executing: $PURGE_CMD"

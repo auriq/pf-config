@@ -10,11 +10,31 @@ let mainWindow;
 // Keep track of all running processes
 const runningProcesses = new Set();
 
+// Log application mode
+console.log(`Application mode: ${process.env.NODE_ENV || 'production'}`);
+console.log(`Application is packaged: ${app.isPackaged}`);
+console.log(`Current working directory: ${process.cwd()}`);
+console.log(`App path: ${app.getAppPath()}`);
+if (app.isPackaged) {
+  console.log(`Resources path: ${process.resourcesPath}`);
+}
+
 // Load configuration
 let appConfig = loadConfig();
 
+// Log configuration
+console.log('Loaded configuration:');
+console.log(`  workspace_dir: ${appConfig.workspace_dir}`);
+console.log(`  path_rclone: ${appConfig.path_rclone}`);
+console.log(`  scripts_path: ${appConfig.scripts_path}`);
+
 // Ensure workspace directory exists
-fs.ensureDirSync(appConfig.workspace_dir);
+try {
+  fs.ensureDirSync(appConfig.workspace_dir);
+  console.log(`Ensured workspace directory exists: ${appConfig.workspace_dir}`);
+} catch (error) {
+  console.error(`Error ensuring workspace directory exists: ${error.message}`);
+}
 
 // Save configuration
 function saveConfig() {
@@ -189,17 +209,64 @@ ipcMain.handle('cleanup-rclone', async () => {
 // Execute shell script
 ipcMain.handle('execute-script', async (event, scriptPath, args = []) => {
   return new Promise((resolve, reject) => {
-    // On macOS, explicitly use /bin/bash to execute shell scripts
-    let command;
-    let scriptArgs;
+    console.log(`===== EXECUTE SCRIPT DEBUG INFO =====`);
+    console.log(`Original script path: ${scriptPath}`);
+    console.log(`Arguments: ${args.join(' ')}`);
+    console.log(`App is packaged: ${app.isPackaged}`);
+    console.log(`Process resourcesPath: ${process.resourcesPath}`);
+    console.log(`Current directory: ${process.cwd()}`);
+    console.log(`__dirname: ${__dirname}`);
     
-    if (process.platform === 'darwin' && scriptPath.endsWith('.sh')) {
-      command = '/bin/bash';
-      scriptArgs = [scriptPath, ...args];
-      console.log(`Using explicit bash interpreter: ${command} ${scriptArgs.join(' ')}`);
+    // Get the script filename
+    const scriptFilename = path.basename(scriptPath);
+    console.log(`Script filename: ${scriptFilename}`);
+    
+    // Resolve the script path for development and production modes
+    let resolvedScriptPath;
+    let scriptFound = false;
+    
+    // First, check if the script exists in the WORKSPACE_DIR
+    const workspaceScriptPath = path.join(appConfig.workspace_dir, 'scripts', scriptFilename);
+    console.log(`Checking for script in workspace: ${workspaceScriptPath}`);
+    
+    if (fs.existsSync(workspaceScriptPath)) {
+      resolvedScriptPath = workspaceScriptPath;
+      scriptFound = true;
+      console.log(`Found script in workspace: ${resolvedScriptPath}`);
     } else {
-      command = scriptPath;
-      scriptArgs = args;
+      console.log(`Script not found in workspace, checking application directories`);
+      
+      // Check if we're in development or production
+      if (app.isPackaged) {
+        // In production, scripts are in the extraResources directory
+        resolvedScriptPath = path.join(process.resourcesPath, 'scripts', scriptFilename);
+        console.log(`Production mode: Resolved script path to ${resolvedScriptPath}`);
+      } else {
+        // In development, scripts are in the scripts directory
+        resolvedScriptPath = path.join(app.getAppPath(), 'scripts', scriptFilename);
+        console.log(`Development mode: Resolved script path to ${resolvedScriptPath}`);
+      }
+    }
+    
+    // Check if script exists (if we haven't already confirmed it)
+    try {
+      if (!scriptFound && !fs.existsSync(resolvedScriptPath)) {
+        console.error(`Script does not exist: ${resolvedScriptPath}`);
+        return reject({ success: false, error: `Script not found: ${resolvedScriptPath}` });
+      }
+      
+      console.log(`Script exists: ${resolvedScriptPath}`);
+      
+      // Make sure script is executable
+      try {
+        fs.chmodSync(resolvedScriptPath, '755');
+        console.log(`Made script executable: ${resolvedScriptPath}`);
+      } catch (chmodErr) {
+        console.warn(`Warning: Could not set executable permissions on script: ${chmodErr.message}`);
+      }
+    } catch (error) {
+      console.error(`Error checking script: ${error.message}`);
+      return reject({ success: false, error: `Error checking script: ${error.message}` });
     }
     
     // Set up environment variables
@@ -222,41 +289,48 @@ ipcMain.handle('execute-script', async (event, scriptPath, args = []) => {
     console.log(`PATH_RCLONE: ${env.PATH_RCLONE}`);
     if (env.SCRIPTS_PATH) console.log(`SCRIPTS_PATH: ${env.SCRIPTS_PATH}`);
     
-    const scriptProcess = spawn(command, scriptArgs, {
-      env,
-      shell: true // Use shell for better script compatibility
-    });
+    // Execute the script using exec instead of spawn
+    console.log(`Executing script: ${resolvedScriptPath} with args: ${args.join(' ')}`);
     
-    // Add to running processes
-    runningProcesses.add(scriptProcess);
-    
-    let stdout = '';
-    let stderr = '';
-    
-    scriptProcess.stdout.on('data', (data) => {
-      stdout += data.toString();
-    });
-    
-    scriptProcess.stderr.on('data', (data) => {
-      stderr += data.toString();
-    });
-    
-    scriptProcess.on('close', (code) => {
-      // Remove from running processes
-      runningProcesses.delete(scriptProcess);
-      
-      if (code === 0) {
-        resolve({ success: true, stdout, stderr });
+    // Construct the command
+    let command;
+    if (process.platform === 'darwin' && resolvedScriptPath.endsWith('.sh')) {
+      command = `bash "${resolvedScriptPath}" ${args.join(' ')}`;
+    } else if (process.platform === 'win32') {
+      if (resolvedScriptPath.endsWith('.ps1')) {
+        command = `powershell -ExecutionPolicy Bypass -File "${resolvedScriptPath}" ${args.join(' ')}`;
+      } else if (resolvedScriptPath.endsWith('.bat')) {
+        command = `"${resolvedScriptPath}" ${args.join(' ')}`;
+      } else if (resolvedScriptPath.endsWith('.sh')) {
+        // Try to use WSL bash if available, otherwise use regular command
+        try {
+          fs.accessSync('C:\\Windows\\System32\\bash.exe', fs.constants.X_OK);
+          command = `bash "${resolvedScriptPath}" ${args.join(' ')}`;
+        } catch (error) {
+          console.warn(`WSL bash not found, trying to execute .sh script directly: ${error.message}`);
+          command = `"${resolvedScriptPath}" ${args.join(' ')}`;
+        }
       } else {
-        resolve({ success: false, stdout, stderr, code });
+        command = `"${resolvedScriptPath}" ${args.join(' ')}`;
       }
-    });
+    } else {
+      command = `"${resolvedScriptPath}" ${args.join(' ')}`;
+    }
     
-    scriptProcess.on('error', (error) => {
-      // Remove from running processes
-      runningProcesses.delete(scriptProcess);
+    console.log(`Executing command: ${command}`);
+    
+    // Execute the command
+    exec(command, { env }, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error executing script: ${error.message}`);
+        console.error(`stderr: ${stderr}`);
+        resolve({ success: false, error: error.message, stderr });
+        return;
+      }
       
-      reject({ success: false, error: error.message });
+      console.log(`Script executed successfully`);
+      console.log(`stdout: ${stdout}`);
+      resolve({ success: true, stdout, stderr });
     });
   });
 });

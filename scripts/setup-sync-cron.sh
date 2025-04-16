@@ -1,6 +1,6 @@
 #!/bin/bash
 # PageFinder Configuration - Crontab Setup Script
-# This script sets up a crontab entry to run sync.sh at a specified time
+# This script sets up a crontab entry to run sync-workspace.sh at a specified time
 # Usage: ./setup-sync-cron.sh HH:MM
 
 # Load environment variables from .env file
@@ -10,7 +10,7 @@ source "$SCRIPT_DIR/env-loader.sh"
 # Function to display usage information
 usage() {
     echo "Usage: $0 HH:MM"
-    echo "  HH:MM - Time to run sync.sh in 24-hour format (e.g., 14:30 for 2:30 PM)"
+    echo "  HH:MM - Time to run sync-workspace.sh in 24-hour format (e.g., 14:30 for 2:30 PM)"
     exit 1
 }
 
@@ -36,21 +36,36 @@ validate_time "$1"
 HOURS=$(echo "$1" | cut -d':' -f1)
 MINUTES=$(echo "$1" | cut -d':' -f2)
 
-# Get the absolute path to sync.sh
+# Get the absolute path to sync-workspace.sh
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SYNC_SCRIPT="$SCRIPT_DIR/sync.sh"
+SYNC_SCRIPT="$SCRIPT_DIR/sync-workspace.sh"
 
-# Check if sync.sh exists
+# If WORKSPACE_DIR is set, use it to store a copy of the script
+if [ -n "$WORKSPACE_DIR" ]; then
+    # Create scripts directory in WORKSPACE_DIR if it doesn't exist
+    WORKSPACE_SCRIPTS_DIR="$WORKSPACE_DIR/scripts"
+    mkdir -p "$WORKSPACE_SCRIPTS_DIR"
+    
+    # Copy the script to WORKSPACE_DIR/scripts
+    cp "$SYNC_SCRIPT" "$WORKSPACE_SCRIPTS_DIR/sync-workspace.sh"
+    chmod +x "$WORKSPACE_SCRIPTS_DIR/sync-workspace.sh"
+    
+    # Use the script in WORKSPACE_DIR
+    SYNC_SCRIPT="$WORKSPACE_SCRIPTS_DIR/sync-workspace.sh"
+    echo "Using script in workspace: $SYNC_SCRIPT"
+fi
+
+# Check if sync-workspace.sh exists
 if [ ! -f "$SYNC_SCRIPT" ]; then
-    echo "Error: sync.sh not found at $SYNC_SCRIPT"
+    echo "Error: sync-workspace.sh not found at $SYNC_SCRIPT"
     exit 1
 fi
 
-# Make sure sync.sh is executable
+# Make sure sync-workspace.sh is executable
 chmod +x "$SYNC_SCRIPT"
 
 # Create the crontab entry with a comment for identification and environment variables
-CRON_ENTRY="$MINUTES $HOURS * * * RCLONE_PATH='$RCLONE_PATH' WORKSPACE_DIR='$WORKSPACE_DIR' $SYNC_SCRIPT -e # PageFinder Daily Sync"
+CRON_ENTRY="$MINUTES $HOURS * * * RCLONE_PATH='$RCLONE_PATH' WORKSPACE_DIR='$WORKSPACE_DIR' \"$SYNC_SCRIPT\" -e # PageFinder Daily Sync"
 
 # Check if our specific entry already exists in crontab
 if crontab -l 2>/dev/null | grep -q "# PageFinder Daily Sync"; then
@@ -65,7 +80,7 @@ fi
 
 # Verify the crontab entry was added
 if crontab -l 2>/dev/null | grep -q "# PageFinder Daily Sync"; then
-    echo "Success: Crontab entry added to run sync.sh at $1 daily."
+    echo "Success: Crontab entry added to run sync-workspace.sh at $1 daily."
     echo "Current crontab entries:"
     crontab -l
 else

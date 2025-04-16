@@ -1,66 +1,49 @@
-# PageFinder Configuration - Environment Loader (Windows PowerShell Version)
-# This script loads environment variables from the .env file
-# It should be dot-sourced by other scripts, not executed directly
+# Environment loader script for Windows
+# Loads environment variables from .env file
 
-# Get the absolute path to the project root directory
-$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
-$projectRoot = (Get-Item $scriptPath).Parent.FullName
-$envFile = Join-Path $projectRoot ".env"
+# Get the directory of the current script
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$rootDir = Split-Path -Parent $scriptDir
 
-# Function to log messages
-function Log-EnvLoader {
-    param([string]$message)
-    Write-Host "[ENV LOADER] $message"
-}
+# Default .env file path
+$envFile = Join-Path $rootDir ".env"
 
-# Check if .env file exists
-if (-not (Test-Path $envFile)) {
-    Log-EnvLoader "Warning: .env file not found at $envFile"
-    Log-EnvLoader "Using default environment variables"
-    
-    # Set default values
-    $env:RCLONE_PATH = "rclone.exe"
-    $env:WORKSPACE_DIR = "$env:APPDATA\pf-config"
-} else {
-    Log-EnvLoader "Loading environment variables from $envFile"
-    
-    # Read .env file and set variables
-    Get-Content $envFile | ForEach-Object {
+Write-Host "[ENV LOADER] Loading environment variables from $envFile"
+
+if (Test-Path $envFile) {
+    # Read the .env file
+    $envContent = Get-Content $envFile
+
+    # Process each line
+    foreach ($line in $envContent) {
         # Skip comments and empty lines
-        if (-not ($_ -match "^#" -or $_ -eq "")) {
-            # Extract variable name and value
-            if ($_ -match "^([A-Za-z0-9_]+)=(.*)$") {
-                $name = $matches[1]
-                $value = $matches[2]
-                
-                # Remove quotes if present
-                $value = $value -replace '^"(.*)"$', '$1'
-                $value = $value -replace "^'(.*)'$", '$1'
-                
-                # Set the environment variable
-                Set-Item -Path "env:$name" -Value $value
-                Log-EnvLoader "Set $name=$value"
-            }
+        if ($line -match "^\s*#" -or $line -match "^\s*$") {
+            continue
+        }
+
+        # Extract variable name and value
+        if ($line -match "^\s*([^=]+)=(.*)$") {
+            $name = $matches[1].Trim()
+            $value = $matches[2].Trim()
+
+            # Set environment variable
+            [Environment]::SetEnvironmentVariable($name, $value, "Process")
+            Write-Host "[ENV LOADER] Exported $name=$value"
         }
     }
-}
 
-# Ensure RCLONE_PATH and WORKSPACE_DIR are set
-if ([string]::IsNullOrEmpty($env:RCLONE_PATH)) {
-    Log-EnvLoader "RCLONE_PATH not set, using default: rclone.exe"
-    $env:RCLONE_PATH = "rclone.exe"
-}
+    # Special handling for SCRIPTS_PATH
+    if ($env:WORKSPACE_DIR -and (Test-Path (Join-Path $env:WORKSPACE_DIR "scripts"))) {
+        $workspaceScriptsPath = Join-Path $env:WORKSPACE_DIR "scripts"
+        [Environment]::SetEnvironmentVariable("SCRIPTS_PATH", $workspaceScriptsPath, "Process")
+        Write-Host "[ENV LOADER] Using scripts from workspace: SCRIPTS_PATH=$workspaceScriptsPath"
+    }
 
-if ([string]::IsNullOrEmpty($env:WORKSPACE_DIR)) {
-    Log-EnvLoader "WORKSPACE_DIR not set, using default: %APPDATA%\pf-config"
-    $env:WORKSPACE_DIR = "$env:APPDATA\pf-config"
+    Write-Host "[ENV LOADER] Environment loaded successfully"
+    Write-Host "[ENV LOADER] RCLONE_PATH=$env:RCLONE_PATH"
+    Write-Host "[ENV LOADER] WORKSPACE_DIR=$env:WORKSPACE_DIR"
+    Write-Host "[ENV LOADER] SCRIPTS_PATH=$env:SCRIPTS_PATH"
+} else {
+    Write-Host "[ENV LOADER] Error: .env file not found at $envFile"
+    exit 1
 }
-
-# Ensure workspace directory exists
-if (-not (Test-Path $env:WORKSPACE_DIR)) {
-    New-Item -ItemType Directory -Path $env:WORKSPACE_DIR -Force | Out-Null
-}
-
-Log-EnvLoader "Environment loaded successfully"
-Log-EnvLoader "RCLONE_PATH=$env:RCLONE_PATH"
-Log-EnvLoader "WORKSPACE_DIR=$env:WORKSPACE_DIR"

@@ -5,18 +5,46 @@
 
 const path = require('path');
 const os = require('os');
-require('dotenv').config();
+const fs = require('fs-extra');
+const { app } = require('electron');
+
+// Determine if we're in production or development mode
+const isProduction = app && app.isPackaged;
+
+// Load environment variables from .env file
+// In production, we need to look for the .env file in the app's root directory
+let envPath = path.join(process.cwd(), '.env');
+if (isProduction) {
+  // In production, try to find .env in the app's root directory
+  const appPath = app.getAppPath();
+  const possibleEnvPaths = [
+    path.join(appPath, '.env'),
+    path.join(process.resourcesPath, '.env'),
+    path.join(process.cwd(), '.env')
+  ];
+  
+  for (const possiblePath of possibleEnvPaths) {
+    if (fs.existsSync(possiblePath)) {
+      envPath = possiblePath;
+      break;
+    }
+  }
+}
+
+require('dotenv').config({ path: envPath });
 
 // Default configuration values
 const defaultConfig = {
   path_rclone: '/usr/local/bin/rclone',
-  workspace_dir: '/tmp/pf-workspace'
+  workspace_dir: '/tmp/pf-workspace',
+  scripts_path: path.join(process.cwd(), 'scripts')
 };
 
 // Load configuration from environment variables
 const envConfig = {
   path_rclone: process.env.RCLONE_PATH,
-  workspace_dir: process.env.WORKSPACE_DIR
+  workspace_dir: process.env.WORKSPACE_DIR,
+  scripts_path: process.env.SCRIPTS_PATH
 };
 
 // Merge default and environment configurations
@@ -34,6 +62,21 @@ if (!envConfig.workspace_dir) {
     config.workspace_dir = path.join(os.homedir(), 'AppData', 'Roaming', 'pf-config');
   } else if (process.platform === 'darwin') {
     config.workspace_dir = path.join(os.homedir(), '.config', 'pf-config');
+  }
+  
+  // Log the workspace directory for debugging
+  console.log(`Using default workspace directory: ${config.workspace_dir}`);
+} else {
+  console.log(`Using workspace directory from environment: ${config.workspace_dir}`);
+}
+
+// In production mode, ensure the workspace directory exists
+if (isProduction) {
+  try {
+    fs.ensureDirSync(config.workspace_dir);
+    console.log(`Ensured workspace directory exists: ${config.workspace_dir}`);
+  } catch (error) {
+    console.error(`Error ensuring workspace directory exists: ${error.message}`);
   }
 }
 
@@ -63,12 +106,14 @@ function updateConfig(newConfig) {
     let envContent = '# PageFinder Configuration Environment Variables\n';
     envContent += `RCLONE_PATH=${config.path_rclone}\n`;
     envContent += `WORKSPACE_DIR=${config.workspace_dir}\n`;
+    envContent += `SCRIPTS_PATH=${config.scripts_path}\n`;
     
     fs.writeFileSync(envPath, envContent);
     
     // Update process.env with new values
     process.env.RCLONE_PATH = config.path_rclone;
     process.env.WORKSPACE_DIR = config.workspace_dir;
+    process.env.SCRIPTS_PATH = config.scripts_path;
   } catch (error) {
     console.error('Error saving configuration:', error);
   }
@@ -95,6 +140,9 @@ function loadConfig() {
       // Update process.env with loaded values
       process.env.RCLONE_PATH = config.path_rclone;
       process.env.WORKSPACE_DIR = config.workspace_dir;
+      if (config.scripts_path) {
+        process.env.SCRIPTS_PATH = config.scripts_path;
+      }
     }
   } catch (error) {
     console.error('Error loading configuration:', error);

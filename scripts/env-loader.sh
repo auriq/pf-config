@@ -80,6 +80,17 @@ fi
 # Ensure workspace directory exists
 mkdir -p "$WORKSPACE_DIR"
 
+# Set SCRIPTS_PATH to the scripts directory in WORKSPACE_DIR if it exists
+if [ -d "$WORKSPACE_DIR/scripts" ]; then
+    export SCRIPTS_PATH="$WORKSPACE_DIR/scripts"
+    log_env_loader "Using scripts from workspace: SCRIPTS_PATH=$SCRIPTS_PATH"
+else
+    # Fall back to the application's scripts directory
+    export SCRIPTS_PATH="$PROJECT_ROOT/scripts"
+    log_env_loader "Using scripts from application: SCRIPTS_PATH=$SCRIPTS_PATH"
+fi
+
 log_env_loader "Environment loaded successfully"
 log_env_loader "RCLONE_PATH=$RCLONE_PATH"
 log_env_loader "WORKSPACE_DIR=$WORKSPACE_DIR"
+log_env_loader "SCRIPTS_PATH=$SCRIPTS_PATH"
