@@ -63,7 +63,7 @@ contextBridge.exposeInMainWorld(
 
       // Parse the config file to extract remote names
       const remotes = [];
-      const lines = configContent.content.replace("\r\n", "\n").replace("\r", "\n").split('\n');
+      const lines = configContent.content.replaceAll("\r\n", "\n").replaceAll("\r", "\n").split('\n');
       for (const line of lines) {
         if (line.startsWith('[') && line.endsWith(']')) {
           remotes.push(line.substring(1, line.length - 1));
@@ -171,7 +171,7 @@ contextBridge.exposeInMainWorld(
         }
 
         // Extract PageFinder name, bucket, and prefix
-        const lines = pfConfig.content.replace("\r\n", "\n").replace("\r", "\n").split('\n');
+        const lines = pfConfig.content.replaceAll("\r\n", "\n").replaceAll("\r", "\n").split('\n');
         let pfName = '';
         let bucket = '';
         let prefix = '';
