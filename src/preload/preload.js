@@ -219,27 +219,26 @@ contextBridge.exposeInMainWorld(
     // Purge operations
     runPurgeTest: async () => {
       const config = await ipcRenderer.invoke('get-config');
-      const scriptPath = 'scripts/purge-workspace.sh';
+      const scriptPath = process.platform === 'win32' ? 'scripts/purge-workspace.ps1' : 'scripts/purge-workspace.sh';
       return ipcRenderer.invoke('execute-script', scriptPath, []);
     },
 
     runPurgeExec: async () => {
       const config = await ipcRenderer.invoke('get-config');
-      const scriptPath = 'scripts/purge-workspace.sh';
-      return ipcRenderer.invoke('execute-script', scriptPath, ['-e']);
+      const scriptPath = process.platform === 'win32' ? 'scripts/purge-workspace.ps1' : 'scripts/purge-workspace.sh';
       return ipcRenderer.invoke('execute-script', scriptPath, ['-e']);
     },
 
     // Sync operations
     runSyncTest: async () => {
       const config = await ipcRenderer.invoke('get-config');
-      const scriptPath = 'scripts/sync-workspace.sh';
+      const scriptPath = process.platform === 'win32' ? 'scripts/sync-workspace.ps1' : 'scripts/sync-workspace.sh';
       return ipcRenderer.invoke('execute-script', scriptPath, []);
     },
 
     runSyncExec: async () => {
       const config = await ipcRenderer.invoke('get-config');
-      const scriptPath = 'scripts/sync-workspace.sh';
+      const scriptPath = process.platform === 'win32' ? 'scripts/sync-workspace.ps1' : 'scripts/sync-workspace.sh';
       return ipcRenderer.invoke('execute-script', scriptPath, ['-e']);
     },
 
