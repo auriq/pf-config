@@ -63,7 +63,7 @@ contextBridge.exposeInMainWorld(
 
       // Parse the config file to extract remote names
       const remotes = [];
-      const lines = configContent.content.split('\n');
+      const lines = configContent.content.replace("\r\n", "\n").replace("\r", "\n").split('\n');
       for (const line of lines) {
         if (line.startsWith('[') && line.endsWith(']')) {
           remotes.push(line.substring(1, line.length - 1));
