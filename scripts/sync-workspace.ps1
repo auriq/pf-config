@@ -38,10 +38,10 @@ function Log-Message {
     param (
         [string]$message
     )
-    
+
     $logTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logEntry = "[$logTime] $message"
-    
+
     # Write to console and log file
     Write-Host $logEntry
     Add-Content -Path $logFile -Value $logEntry
@@ -104,45 +104,45 @@ $remoteNames = $remoteMeta | Get-Member -MemberType NoteProperty | Select-Object
 
 foreach ($remoteName in $remoteNames) {
     Log-Message "Processing cloud storage: $remoteName"
-    
+
     $remote = $remoteMeta.$remoteName
     $subfolder = $remote.subfolder
-    
+
     if ($subfolder) {
         Log-Message "Found subfolder in metadata: $subfolder for $remoteName"
-        
+
         # Construct paths
         $cloudPath = "$($remoteName):$subfolder"
         $pfPath = "pf-user-6:cdk-essentia-bucket-asishop-virginia/user/pf-user-6/$remoteName"
-        
+
         Log-Message "Cloud path: $cloudPath"
         Log-Message "PageFinder path: $pfPath"
-        
+
         # Construct rclone command
         $rcloneArgs = @(
             "sync",
             $cloudPath,
             $pfPath
         )
-        
+
         if (-not $executeMode) {
             $rcloneArgs += "--dry-run"
         }
-        
+
         $rcloneArgs += "--config"
         $rcloneArgs += $rcloneConfPath
-        
+
         # Execute rclone command
         $rcloneCmd = "$env:RCLONE_PATH $($rcloneArgs -join ' ')"
         Log-Message "Executing command: $rcloneCmd"
-        
+
         try {
             $output = & $env:RCLONE_PATH $rcloneArgs 2>&1
             $outputStr = $output | Out-String
-            
-            Log-Message "Command output for $remoteName:"
+
+            Log-Message "Command output for $remoteName"
             Log-Message "  $($outputStr -replace "`n", "`n  ")"
-            
+
             if (-not $executeMode) {
                 Log-Message "Dry run for $remoteName completed successfully"
             } else {
