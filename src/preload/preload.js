@@ -252,7 +252,7 @@ contextBridge.exposeInMainWorld(
 
       try {
         // Use the relative path to the setup-sync-cron.sh script
-        const scriptPath = 'scripts/setup-sync-cron.sh';
+        const scriptPath = process.platform === 'win32' ? 'scripts/setup-sync-cron.ps1' : 'scripts/setup-sync-cron.sh';
 
         // Execute the script with the time parameter
         const result = await ipcRenderer.invoke('execute-script', scriptPath, [time]);
