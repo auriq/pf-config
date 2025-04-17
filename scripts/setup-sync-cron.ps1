@@ -1,6 +1,5 @@
 # Setup sync cron script for Windows
 # Sets up a scheduled task to run the sync-workspace script daily
-
 param (
     [string]$time = "03:00"
 )
@@ -34,8 +33,8 @@ if ($hour -lt 0 -or $hour -gt 23 -or $minute -lt 0 -or $minute -gt 59) {
 
 # Determine script to use
 $syncScriptPath = ""
-if (Test-Path (Join-Path $env:WORKSPACE_DIR "scripts" "sync-workspace.ps1")) {
-    $syncScriptPath = Join-Path $env:WORKSPACE_DIR "scripts" "sync-workspace.ps1"
+if (Test-Path (Join-Path $env:WORKSPACE_DIR "scripts/sync-workspace.ps1")) {
+    $syncScriptPath = Join-Path $env:WORKSPACE_DIR "scripts/sync-workspace.ps1"
     Write-Host "Using script in workspace: $syncScriptPath"
 } elseif (Test-Path (Join-Path $scriptDir "sync-workspace.ps1")) {
     $syncScriptPath = Join-Path $scriptDir "sync-workspace.ps1"
