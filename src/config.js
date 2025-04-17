@@ -22,7 +22,7 @@ if (isProduction) {
     path.join(process.resourcesPath, '.env'),
     path.join(process.cwd(), '.env')
   ];
-  
+
   for (const possiblePath of possibleEnvPaths) {
     if (fs.existsSync(possiblePath)) {
       envPath = possiblePath;
@@ -35,8 +35,8 @@ require('dotenv').config({ path: envPath });
 
 // Default configuration values
 const defaultConfig = {
-  path_rclone: '/usr/local/bin/rclone',
-  workspace_dir: '/tmp/pf-workspace',
+  path_rclone: process.platform === 'win32' ? 'rclone.exe' : '/usr/local/bin/rclone',
+  workspace_dir: process.platform === 'win32' ? path.join(os.homedir(), 'AppData', 'Roaming', 'pf-config') : '/tmp/pf-workspace',
   scripts_path: path.join(process.cwd(), 'scripts')
 };
 
@@ -63,7 +63,7 @@ if (!envConfig.workspace_dir) {
   } else if (process.platform === 'darwin') {
     config.workspace_dir = path.join(os.homedir(), '.config', 'pf-config');
   }
-  
+
   // Log the workspace directory for debugging
   console.log(`Using default workspace directory: ${config.workspace_dir}`);
 } else {
@@ -90,26 +90,26 @@ config.configPath = path.join(config.workspace_dir, 'app-config.json');
  */
 function updateConfig(newConfig) {
   const fs = require('fs-extra');
-  
+
   // Update config object
   config = { ...config, ...newConfig };
-  
+
   try {
     // Ensure workspace directory exists
     fs.ensureDirSync(config.workspace_dir);
-    
+
     // Save to JSON config file
     fs.writeJsonSync(config.configPath, config, { spaces: 2 });
-    
+
     // Update .env file
     const envPath = path.join(process.cwd(), '.env');
     let envContent = '# PageFinder Configuration Environment Variables\n';
     envContent += `RCLONE_PATH=${config.path_rclone}\n`;
     envContent += `WORKSPACE_DIR=${config.workspace_dir}\n`;
     envContent += `SCRIPTS_PATH=${config.scripts_path}\n`;
-    
+
     fs.writeFileSync(envPath, envContent);
-    
+
     // Update process.env with new values
     process.env.RCLONE_PATH = config.path_rclone;
     process.env.WORKSPACE_DIR = config.workspace_dir;
@@ -117,7 +117,7 @@ function updateConfig(newConfig) {
   } catch (error) {
     console.error('Error saving configuration:', error);
   }
-  
+
   return config;
 }
 
@@ -127,16 +127,16 @@ function updateConfig(newConfig) {
  */
 function loadConfig() {
   const fs = require('fs-extra');
-  
+
   try {
     // Ensure workspace directory exists
     fs.ensureDirSync(config.workspace_dir);
-    
+
     // Load configuration if it exists
     if (fs.existsSync(config.configPath)) {
       const savedConfig = fs.readJsonSync(config.configPath);
       config = { ...config, ...savedConfig };
-      
+
       // Update process.env with loaded values
       process.env.RCLONE_PATH = config.path_rclone;
       process.env.WORKSPACE_DIR = config.workspace_dir;
@@ -147,7 +147,7 @@ function loadConfig() {
   } catch (error) {
     console.error('Error loading configuration:', error);
   }
-  
+
   return config;
 }
 
