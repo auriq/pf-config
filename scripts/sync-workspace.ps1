@@ -3,7 +3,7 @@
 
 # Get the directory of the current script
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$rootDir = Split-Path -Parent $scriptDir
+#$rootDir = Split-Path -Parent $scriptDir
 
 # Load environment variables
 if (Test-Path (Join-Path $scriptDir "env-loader.ps1")) {
