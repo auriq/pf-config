@@ -38,13 +38,43 @@ function Log-Message {
     param (
         [string]$message
     )
-    
+
     $logTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logEntry = "[$logTime] $message"
-    
+
     # Write to console and log file
     Write-Host $logEntry
     Add-Content -Path $logFile -Value $logEntry
+}
+
+# Function to parse ini conf file
+function Read-IniFile {
+    param (
+        [string]$FilePath
+    )
+
+    # 結果を格納するハッシュテーブル
+    $ini = @{}
+    $currentSection = $null
+
+    # ファイルを1行ずつ読み込む
+    Get-Content $FilePath | ForEach-Object {
+        $line = $_.Trim()
+
+        # セクションの判定
+        if ($line -match '^\[(.+)\]$') {
+            $currentSection = $matches[1]
+            $ini[$currentSection] = @{}
+        }
+        # キーと値の判定
+        elseif ($line -match '^(.+?)=(.+)$' -and $currentSection) {
+            $key = $matches[1].Trim()
+            $value = $matches[2].Trim()
+            $ini[$currentSection][$key] = $value
+        }
+    }
+
+    return $ini
 }
 
 # Initialize log file
@@ -71,6 +101,7 @@ $rcloneConfPath = Join-Path $workdir "rclone.conf"
 
 if (Test-Path $cloudConfPath) {
     $cloudConf = Get-Content -Path $cloudConfPath -Raw
+    $pfConfContent = Read-IniFile -FilePath $pfConfPath
 } else {
     Log-Message "Error: cloud.conf not found at $cloudConfPath"
     exit 1
@@ -88,8 +119,12 @@ $combinedConf = $cloudConf + "`n" + $pfConf
 Set-Content -Path $rcloneConfPath -Value $combinedConf
 Log-Message "Combined configuration created at $rcloneConfPath"
 
+# parse pf.conf
+$pfName = $pfConfContent.Keys
+$pfConfData = $pfConfContent[$pfName]
+
 # Define PageFinder base path
-$pfBasePath = "pf-user-6:cdk-essentia-bucket-asishop-virginia/user/pf-user-6"
+$pfBasePath = -join ($pfName + ":" + $pfConfData.bucket + "/" + $pfConfData.prefix + "/" + $remoteName)
 Log-Message "PageFinder base path: $pfBasePath"
 
 # Find folders in destination
@@ -111,7 +146,7 @@ try {
     $outputStr = $output | Out-String
     Log-Message "Parsing destination folders output..."
     Log-Message "Output: $outputStr"
-    
+
     # Parse output to get folder names
     $destFolders = @()
     foreach ($line in $output) {
@@ -121,13 +156,13 @@ try {
             Log-Message "Found folder: $folderName"
         }
     }
-    
+
     Log-Message "Destination folders found: $($destFolders -join ', ')"
-    
+
     # Find source remote names from cloud.conf
     Log-Message "Finding source remote names from cloud.conf..."
     $remoteNames = @()
-    
+
     $cloudConfContent = Get-Content -Path $cloudConfPath
     foreach ($line in $cloudConfContent) {
         if ($line -match "^\[([^\]]+)\]") {
@@ -136,30 +171,30 @@ try {
             Log-Message "Found remote: $remoteName"
         }
     }
-    
+
     Log-Message "Source remotes found: $($remoteNames -join ', ')"
-    
+
     # Compare names to find orphans
     Log-Message "Comparing names to find orphans..."
     $orphans = @()
-    
+
     foreach ($destFolder in $destFolders) {
         if ($remoteNames -notcontains $destFolder) {
             $orphans += $destFolder
             Log-Message "Found orphan: $destFolder"
         }
     }
-    
+
     if ($orphans.Count -eq 0) {
         Log-Message "No orphans found"
     } else {
         Log-Message "Found $($orphans.Count) orphans: $($orphans -join ', ')"
-        
+
         # Process orphans
         foreach ($orphan in $orphans) {
             $orphanPath = "$pfBasePath/$orphan"
             Log-Message "Processing orphan: $orphanPath"
-            
+
             # Construct purge command
             $purgeArgs = @(
                 "purge",
@@ -167,7 +202,7 @@ try {
                 "--config",
                 $rcloneConfPath
             )
-            
+
             if (-not $executeMode) {
                 Log-Message "Would purge orphan: $orphanPath (dry run)"
             } else {

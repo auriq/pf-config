@@ -47,6 +47,36 @@ function Log-Message {
     Add-Content -Path $logFile -Value $logEntry
 }
 
+# Function to parse ini conf file
+function Read-IniFile {
+    param (
+        [string]$FilePath
+    )
+
+    # 結果を格納するハッシュテーブル
+    $ini = @{}
+    $currentSection = $null
+
+    # ファイルを1行ずつ読み込む
+    Get-Content $FilePath | ForEach-Object {
+        $line = $_.Trim()
+
+        # セクションの判定
+        if ($line -match '^\[(.+)\]$') {
+            $currentSection = $matches[1]
+            $ini[$currentSection] = @{}
+        }
+        # キーと値の判定
+        elseif ($line -match '^(.+?)=(.+)$' -and $currentSection) {
+            $key = $matches[1].Trim()
+            $value = $matches[2].Trim()
+            $ini[$currentSection][$key] = $value
+        }
+    }
+
+    return $ini
+}
+
 # Initialize log file
 Write-Host "Script started at $timestamp"
 Write-Host "Working directory: $workdir"
@@ -78,6 +108,7 @@ if (Test-Path $cloudConfPath) {
 
 if (Test-Path $pfConfPath) {
     $pfConf = Get-Content -Path $pfConfPath -Raw
+    $pfConfContent = Read-IniFile -FilePath $pfConfPath
 } else {
     Log-Message "Error: pf.conf not found at $pfConfPath"
     exit 1
@@ -87,6 +118,10 @@ if (Test-Path $pfConfPath) {
 $combinedConf = $cloudConf + "`n" + $pfConf
 Set-Content -Path $rcloneConfPath -Value $combinedConf
 Log-Message "Combined configuration created at $rcloneConfPath"
+
+# parse pf.conf
+$pfName = $pfConfContent.Keys
+$pfConfData = $pfConfContent[$pfName]
 
 # Process cloud storage configurations
 Log-Message "Processing cloud storage configurations"
@@ -113,7 +148,7 @@ foreach ($remoteName in $remoteNames) {
 
         # Construct paths
         $cloudPath = "$($remoteName):$subfolder"
-        $pfPath = "pf-user-6:cdk-essentia-bucket-asishop-virginia/user/pf-user-6/$remoteName"
+        $pfPath = -join ($pfName + ":" + $pfConfData.bucket + "/" + $pfConfData.prefix + "/" + $remoteName)
 
         Log-Message "Cloud path: $cloudPath"
         Log-Message "PageFinder path: $pfPath"
