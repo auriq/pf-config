@@ -114,6 +114,7 @@
       "entitlementsInherit": "build/entitlements.mac.inherit.plist"
     },
     "win": {
+      "requestedExecutionLevel": "requireAdministrator",
       "target": [
         {
           "target": "nsis",
