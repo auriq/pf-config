@@ -53,20 +53,17 @@ function Read-IniFile {
         [string]$FilePath
     )
 
-    # 結果を格納するハッシュテーブル
     $ini = @{}
     $currentSection = $null
 
-    # ファイルを1行ずつ読み込む
     Get-Content $FilePath | ForEach-Object {
         $line = $_.Trim()
 
-        # セクションの判定
         if ($line -match '^\[(.+)\]$') {
             $currentSection = $matches[1]
             $ini[$currentSection] = @{}
         }
-        # キーと値の判定
+
         elseif ($line -match '^(.+?)=(.+)$' -and $currentSection) {
             $key = $matches[1].Trim()
             $value = $matches[2].Trim()
