@@ -8,6 +8,11 @@ $rootDir = Split-Path -Parent $scriptDir
 # Default .env file path
 $envFile = Join-Path $rootDir ".env"
 
+if (!(Test-Path $envFile -PathType Leaf)) {
+    $rootDir = Split-Path -Parent $rootDir
+    $envFile = Join-Path $rootDir ".env"
+}
+
 Write-Host "[ENV LOADER] Loading environment variables from $envFile"
 
 if (Test-Path $envFile) {
