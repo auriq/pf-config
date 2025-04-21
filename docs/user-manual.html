@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PageFinder Configuration Utility - User Manual</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #2c3e50;
+            margin-top: 25px;
+        }
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        code {
+            background-color: #f8f8f8;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: Consolas, Monaco, 'Andale Mono', monospace;
+            font-size: 0.9em;
+        }
+        pre {
+            background-color: #f8f8f8;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: Consolas, Monaco, 'Andale Mono', monospace;
+            font-size: 0.9em;
+        }
+        img {
+            max-width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .image-caption {
+            text-align: center;
+            font-style: italic;
+            color: #666;
+            margin-top: 5px;
+            margin-bottom: 20px;
+        }
+        .note {
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .toc {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .toc ul {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+        .toc li {
+            margin: 5px 0;
+        }
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>PageFinder Configuration Utility - User Manual</h1>
+
+    <div class="toc">
+        <h2>Table of Contents</h2>
+        <ul>
+            <li><a href="#introduction">1. Introduction</a></li>
+            <li><a href="#installation">2. Installation</a></li>
+            <li><a href="#getting-started">3. Getting Started</a></li>
+            <li><a href="#cloud-configuration">4. Cloud Configuration</a></li>
+            <li><a href="#pagefinder-configuration">5. PageFinder Configuration</a></li>
+            <li><a href="#synchronization">6. Synchronization</a></li>
+            <li><a href="#scheduling">7. Scheduling</a></li>
+            <li><a href="#settings">8. Settings</a></li>
+            <li><a href="#troubleshooting">9. Troubleshooting</a></li>
+            <li><a href="#faq">10. FAQ</a></li>
+            <li><a href="#glossary">11. Glossary</a></li>
+        </ul>
+    </div>
+
+    <h2 id="introduction">1. Introduction</h2>
+
+    <p>The PageFinder Configuration Utility is a desktop application designed to simplify the management of cloud storage connections with PageFinder. It provides a user-friendly interface for configuring, testing, and synchronizing data between various cloud storage providers and PageFinder's storage system.</p>
+
+    <img src="images/main_interface.png" alt="Main Interface">
+    <div class="image-caption">The main interface of the PageFinder Configuration Utility</div>
+
+    <h3>1.1 Key Features</h3>
+
+    <ul>
+        <li>Configure and manage connections to multiple cloud storage providers</li>
+        <li>Import and test PageFinder configuration</li>
+        <li>Synchronize files between cloud storage and PageFinder</li>
+        <li>Schedule automatic synchronization</li>
+        <li>Purge orphaned folders from PageFinder</li>
+    </ul>
+
+    <h3>1.2 System Requirements</h3>
+
+    <ul>
+        <li><strong>Operating Systems</strong>:
+            <ul>
+                <li>macOS 10.13 or later (Intel or Apple Silicon)</li>
+                <li>Windows 10 or later</li>
+                <li>Linux (major distributions)</li>
+            </ul>
+        </li>
+        <li><strong>Disk Space</strong>: At least 200MB of free disk space</li>
+        <li><strong>Dependencies</strong>: rclone (automatically managed by the application)</li>
+    </ul>
+
+    <h2 id="installation">2. Installation</h2>
+
+    <h3>2.1 macOS Installation</h3>
+
+    <ol>
+        <li>Download the appropriate installer for your Mac:
+            <ul>
+                <li>For Apple Silicon (M1/M2) Macs: <code>PageFinder Configuration-[version]-mac-arm64-installer.dmg</code></li>
+                <li>For Intel Macs: <code>PageFinder Configuration-[version]-mac-x64-installer.dmg</code></li>
+            </ul>
+        </li>
+        <li>Open the downloaded DMG file</li>
+        <li>Drag the PageFinder Configuration app to your Applications folder</li>
+        <li>Open the app from your Applications folder
+            <div class="note">Note: On first launch, you may need to right-click the app and select "Open" to bypass macOS security</div>
+        </li>
+    </ol>
+
+    <h3>2.2 Windows Installation</h3>
+
+    <ol>
+        <li>Download the Windows installer: <code>PageFinder Configuration-[version]-win-x64-setup.exe</code></li>
+        <li>Run the installer and follow the on-screen instructions</li>
+        <li>Launch the application from the Start menu or desktop shortcut</li>
+    </ol>
+
+    <h3>2.3 Linux Installation</h3>
+
+    <ol>
+        <li>Download the appropriate package for your distribution:
+            <ul>
+                <li>AppImage: <code>PageFinder Configuration-[version]-linux-x86_64.AppImage</code></li>
+                <li>Debian/Ubuntu: <code>pagefinder-configuration_[version]_amd64.deb</code></li>
+            </ul>
+        </li>
+        <li>Install the package using your distribution's package manager or run the AppImage</li>
+        <li>Launch the application from your applications menu</li>
+    </ol>
+
+    <h2 id="getting-started">3. Getting Started</h2>
+
+    <h3>3.1 First Launch</h3>
+
+    <p>When you first launch the PageFinder Configuration Utility, you'll see the main interface with a sidebar navigation menu on the left and the main content area on the right.</p>
+
+    <img src="images/main_interface.png" alt="Main Interface">
+    <div class="image-caption">The main interface showing the sidebar navigation and content area</div>
+
+    <p>The sidebar contains the following sections:</p>
+    <ul>
+        <li>Cloud Config</li>
+        <li>PageFinder Config</li>
+        <li>Sync</li>
+        <li>Schedule</li>
+        <li>Settings</li>
+    </ul>
+
+    <h3>3.2 Initial Setup</h3>
+
+    <p>Before using the application, you should:</p>
+
+    <ol>
+        <li>Verify the rclone path in the Settings section</li>
+        <li>Verify the workspace directory in the Settings section</li>
+        <li>Add at least one cloud storage connection</li>
+        <li>Import your PageFinder configuration</li>
+    </ol>
+
+    <img src="images/settings_section.png" alt="Settings Section">
+    <div class="image-caption">The Settings section for configuring rclone path and workspace directory</div>
+
+    <h2 id="cloud-configuration">4. Cloud Configuration</h2>
+
+    <p>The Cloud Config section allows you to manage your cloud storage connections.</p>
+
+    <img src="images/cloud_config_section.png" alt="Cloud Config Section">
+    <div class="image-caption">The Cloud Config section showing the add cloud form and cloud list</div>
+
+    <h3>4.1 Adding Cloud Storage</h3>
+
+    <p>To add a new cloud storage connection:</p>
+
+    <ol>
+        <li>Navigate to the Cloud Config section</li>
+        <li>Enter a name for your remote in the "Remote Name" field
+            <ul>
+                <li>Use a descriptive name without spaces (e.g., "gdrive", "onedrive-work")</li>
+            </ul>
+        </li>
+        <li>Select the type of cloud storage from the dropdown menu:
+            <ul>
+                <li>Google Drive</li>
+                <li>OneDrive</li>
+                <li>Box</li>
+                <li>Local Directory</li>
+            </ul>
+        </li>
+        <li>Click the "Add Cloud Storage" button</li>
+        <li>Follow the authentication process for your selected provider:
+            <ul>
+                <li>For Google Drive, OneDrive, and Box: You'll be guided through an OAuth authentication flow</li>
+                <li>For Local Directory: You'll need to select a directory on your local machine</li>
+            </ul>
+        </li>
+    </ol>
+
+    <img src="images/add_cloud_form.png" alt="Add Cloud Form">
+    <div class="image-caption">The form for adding a new cloud storage connection</div>
+
+    <div class="note">
+        <strong>Note</strong>: There is a limit of 3 remote connections. If you need to add a new one, you may need to delete an existing connection first.
+    </div>
+
+    <h3>4.2 Managing Cloud Storage</h3>
+
+    <p>For each cloud storage connection, you can:</p>
+
+    <ol>
+        <li><strong>Configure a Subfolder</strong>: Limit synchronization to a specific subfolder within your cloud storage
+            <ul>
+                <li>Enter the subfolder path in the text field</li>
+                <li>Click "Save" to save the subfolder configuration</li>
+            </ul>
+            <img src="images/subfolder_config.png" alt="Subfolder Config">
+            <div class="image-caption">Configuring a subfolder for a cloud storage connection</div>
+        </li>
+        <li><strong>Check Connection</strong>: Test the connection to your cloud storage
+            <ul>
+                <li>Toggle "List Files" to see a list of files in your cloud storage</li>
+                <li>Click "Check" to test the connection</li>
+                <li>The results will be displayed below</li>
+            </ul>
+            <img src="images/cloud_check_result.png" alt="Cloud Check Result">
+            <div class="image-caption">The result of checking a cloud storage connection</div>
+        </li>
+        <li><strong>Delete Connection</strong>: Remove the cloud storage connection
+            <ul>
+                <li>Click "Delete" to remove the connection</li>
+                <li>Confirm the deletion in the confirmation dialog</li>
+            </ul>
+            <img src="images/confirmation_dialog.png" alt="Confirmation Dialog">
+            <div class="image-caption">Confirmation dialog for deleting a cloud storage connection</div>
+        </li>
+    </ol>
+
+    <h2 id="pagefinder-configuration">5. PageFinder Configuration</h2>
+
+    <p>The PageFinder Config section allows you to import and test your PageFinder configuration.</p>
+
+    <img src="images/pagefinder_config_section.png" alt="PageFinder Config Section">
+    <div class="image-caption">The PageFinder Config section showing the import form and test connection button</div>
+
+    <h3>5.1 Importing PageFinder Configuration</h3>
+
+    <p>To import your PageFinder configuration:</p>
+
+    <ol>
+        <li>Navigate to the PageFinder Config section</li>
+        <li>Click "Browse" to select your PageFinder configuration file</li>
+        <li>Select the configuration file from your computer</li>
+        <li>Click "Import Configuration" to import the file</li>
+        <li>The application will validate and import the configuration</li>
+    </ol>
+
+    <img src="images/import_config.png" alt="Import Config">
+    <div class="image-caption">Importing a PageFinder configuration file</div>
+
+    <h3>5.2 Testing PageFinder Connection</h3>
+
+    <p>To test your PageFinder connection:</p>
+
+    <ol>
+        <li>After importing your configuration, click "Test Connection"</li>
+        <li>The application will attempt to connect to PageFinder using your configuration</li>
+        <li>The results will be displayed in the result container</li>
+        <li>If successful, you'll see a list of folders in your PageFinder storage</li>
+    </ol>
+
+    <img src="images/test_connection_result.png" alt="Test Connection Result">
+    <div class="image-caption">The result of testing a PageFinder connection</div>
+
+    <h3>5.3 Purging Orphan Folders</h3>
+
+    <p>To purge orphaned folders from PageFinder:</p>
+
+    <ol>
+        <li>Click "Test Purge" to see which folders would be purged</li>
+        <li>Review the purge log to ensure you want to proceed</li>
+        <img src="images/purge_test_result.png" alt="Purge Test Result">
+        <div class="image-caption">The result of testing a purge operation</div>
+        <li>If you're satisfied with the results, click "Execute Purge"</li>
+        <li>Confirm the purge operation in the confirmation dialog</li>
+        <li>The purge log will be updated with the results of the operation</li>
+        <img src="images/purge_exec_result.png" alt="Purge Exec Result">
+        <div class="image-caption">The result of executing a purge operation</div>
+    </ol>
+
+    <h2 id="synchronization">6. Synchronization</h2>
+
+    <p>The Sync section allows you to synchronize files between your cloud storage and PageFinder.</p>
+
+    <img src="images/sync_section.png" alt="Sync Section">
+    <div class="image-caption">The Sync section showing the test and execute buttons</div>
+
+    <h3>6.1 Testing Synchronization</h3>
+
+    <p>To test synchronization without actually transferring files:</p>
+
+    <ol>
+        <li>Navigate to the Sync section</li>
+        <li>Click "Test Sync" to perform a dry run</li>
+        <li>The application will simulate the synchronization process</li>
+        <li>Review the sync log to see what would be transferred</li>
+    </ol>
+
+    <img src="images/sync_test_result.png" alt="Sync Test Result">
+    <div class="image-caption">The result of testing synchronization</div>
+
+    <h3>6.2 Executing Synchronization</h3>
+
+    <p>To execute the synchronization and actually transfer files:</p>
+
+    <ol>
+        <li>After testing synchronization, click "Execute Sync"</li>
+        <li>The application will start transferring files between your cloud storage and PageFinder</li>
+        <li>The sync log will be updated with the progress and results of the operation</li>
+        <li>Wait for the synchronization to complete</li>
+    </ol>
+
+    <img src="images/sync_exec_result.png" alt="Sync Exec Result">
+    <div class="image-caption">The result of executing synchronization</div>
+
+    <div class="note">
+        <strong>Note</strong>: Synchronization may take a long time depending on the amount of data being transferred.
+    </div>
+
+    <img src="images/sync_progress.png" alt="Sync Progress">
+    <div class="image-caption">Synchronization in progress</div>
+
+    <h2 id="scheduling">7. Scheduling</h2>
+
+    <p>The Schedule section allows you to set up automatic synchronization at specified times.</p>
+
+    <img src="images/schedule_section.png" alt="Schedule Section">
+    <div class="image-caption">The Schedule section showing the schedule form and sync log</div>
+
+    <h3>7.1 Setting Up Scheduled Synchronization</h3>
+
+    <p>To set up scheduled synchronization:</p>
+
+    <ol>
+        <li>Navigate to the Schedule section</li>
+        <li>Enter the time for synchronization in the "Sync Time" field (HH:MM in 24-hour format)</li>
+        <li>Click "Set Up Schedule" to create the schedule</li>
+        <li>The application will set up a scheduled task or cron job on your system</li>
+        <li>The result will be displayed in the result container</li>
+    </ol>
+
+    <img src="images/schedule_form.png" alt="Schedule Form">
+    <div class="image-caption">The form for setting up scheduled synchronization</div>
+
+    <img src="images/schedule_result.png" alt="Schedule Result">
+    <div class="image-caption">The result of setting up a schedule</div>
+
+    <h3>7.2 Viewing Sync Logs</h3>
+
+    <p>To view the logs from the most recent scheduled synchronization:</p>
+
+    <ol>
+        <li>The last sync log will be displayed in the "Last Sync Log" section</li>
+        <li>Click the refresh button to reload the log if needed</li>
+    </ol>
+
+    <img src="images/sync_log.png" alt="Sync Log">
+    <div class="image-caption">The sync log from a scheduled synchronization</div>
+
+    <h2 id="settings">8. Settings</h2>
+
+    <p>The Settings section allows you to configure the application's environment.</p>
+
+    <img src="images/settings_section.png" alt="Settings Section">
+    <div class="image-caption">The Settings section showing the configuration options</div>
+
+    <h3>8.1 Configuring rclone Path</h3>
+
+    <p>To configure the path to the rclone executable:</p>
+
+    <ol>
+        <li>Navigate to the Settings section</li>
+        <li>Enter the path to the rclone executable in the "rclone Path" field
+            <ul>
+                <li>Default on macOS and Linux: <code>/usr/local/bin/rclone</code></li>
+                <li>Default on Windows: <code>rclone.exe</code> (assumed to be in PATH)</li>
+            </ul>
+        </li>
+        <li>Alternatively, click "Browse" to select the rclone executable</li>
+        <li>Click "Save Settings" to save the configuration</li>
+    </ol>
+
+    <img src="images/settings_form.png" alt="Settings Form">
+    <div class="image-caption">The settings form with configuration options</div>
+
+    <h3>8.2 Configuring Workspace Directory</h3>
+
+    <p>To configure the workspace directory:</p>
+
+    <ol>
+        <li>Enter the path to the workspace directory in the "Workspace Directory" field
+            <ul>
+                <li>Default on macOS: <code>~/.config/pf-config</code></li>
+                <li>Default on Windows: <code>%APPDATA%\pf-config</code></li>
+                <li>Default on Linux: <code>~/.config/pf-config</code></li>
+            </ul>
+        </li>
+        <li>Alternatively, click "Browse" to select a directory</li>
+        <li>Click "Save Settings" to save the configuration</li>
+    </ol>
+
+    <img src="images/settings_saved.png" alt="Settings Saved">
+    <div class="image-caption">Confirmation of saved settings</div>
+
+    <h2 id="troubleshooting">9. Troubleshooting</h2>
+
+    <h3>9.1 Common Issues</h3>
+
+    <h4>Application Won't Start</h4>
+
+    <ul>
+        <li>Ensure you have sufficient permissions to run the application</li>
+        <li>Check if there's enough disk space</li>
+        <li>Try reinstalling the application</li>
+    </ul>
+
+    <h4>Cloud Storage Connection Fails</h4>
+
+    <ul>
+        <li>Verify your internet connection</li>
+        <li>Check if your authentication credentials are valid</li>
+        <li>Ensure the cloud service is operational</li>
+        <li>Try removing and re-adding the connection</li>
+    </ul>
+
+    <img src="images/error_dialog.png" alt="Error Dialog">
+    <div class="image-caption">Error dialog showing a connection failure</div>
+
+    <h4>Synchronization Fails</h4>
+
+    <ul>
+        <li>Check both cloud storage and PageFinder connections</li>
+        <li>Verify that you have the necessary permissions</li>
+        <li>Check if there's enough space in your PageFinder storage</li>
+        <li>Review the sync log for specific error messages</li>
+    </ul>
+
+    <h4>Scheduled Sync Doesn't Run</h4>
+
+    <ul>
+        <li>Verify that your computer was on at the scheduled time</li>
+        <li>Check if the application has the necessary permissions to create scheduled tasks</li>
+        <li>Review the system's task scheduler or cron jobs</li>
+        <li>Check the sync log for any error messages</li>
+    </ul>
+
+    <h3>9.2 Log Files</h3>
+
+    <p>The application stores log files in the workspace directory:</p>
+
+    <ul>
+        <li><code>sync.log</code>: Contains logs from synchronization operations</li>
+        <li><code>purge.log</code>: Contains logs from purge operations</li>
+        <li><code>app-config.json</code>: Contains application configuration</li>
+    </ul>
+
+    <img src="images/notification.png" alt="Notification">
+    <div class="image-caption">Notification showing operation status</div>
+
+    <h2 id="faq">10. FAQ</h2>
+
+    <h3>10.1 General Questions</h3>
+
+    <h4>Q: How many cloud storage connections can I add?</h4>
+    <p>A: You can add up to 3 cloud storage connections.</p>
+
+    <h4>Q: Does the application transfer my files through its servers?</h4>
+    <p>A: No, the application facilitates direct transfer between your cloud storage and PageFinder. Your files do not pass through any intermediate servers.</p>
+
+    <h4>Q: Can I use the application without an internet connection?</h4>
+    <p>A: You need an internet connection to authenticate with cloud storage providers and to synchronize with PageFinder. However, you can configure local directory connections without internet access.</p>
+
+    <h3>10.2 Technical Questions</h3>
+
+    <h4>Q: What happens if synchronization is interrupted?</h4>
+    <p>A: The application uses rclone, which is designed to handle interruptions gracefully. If synchronization is interrupted, you can simply run it again, and it will continue from where it left off.</p>
+
+    <h4>Q: Can I synchronize multiple cloud storage connections simultaneously?</h4>
+    <p>A: The application synchronizes one cloud storage connection at a time to ensure stability and prevent resource contention.</p>
+
+    <h4>Q: How secure is my data?</h4>
+    <p>A: The application uses secure authentication methods for cloud storage providers. Your credentials are stored securely in the workspace directory with appropriate permissions.</p>
+
+    <h2 id="glossary">11. Glossary</h2>
+
+    <dl>
+        <dt><strong>Remote</strong></dt>
+        <dd>A configured connection to a cloud storage provider or local directory</dd>
+
+        <dt><strong>Workspace Directory</strong></dt>
+        <dd>The directory where the application stores its configuration, metadata, and log files</dd>
+
+        <dt><strong>rclone</strong></dt>
+        <dd>The command-line program used by the application to handle file operations with cloud storage</dd>
+
+        <dt><strong>Subfolder</strong></dt>
+        <dd>A specific folder within a cloud storage connection that limits the scope of synchronization</dd>
+
+        <dt><strong>Purge</strong></dt>
+        <dd>The process of removing orphaned folders from PageFinder that no longer have corresponding cloud storage</dd>
+
+        <dt><strong>Sync</strong></dt>
+        <dd>The process of transferring files between cloud storage and PageFinder</dd>
+    </dl>
+
+    <footer style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666;">
+        <p>PageFinder Configuration Utility - User Manual</p>
+        <p>Copyright © 2025 PageFinder Team</p>
+    </footer>
+</body>
+</html>

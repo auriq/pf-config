@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PageFinder Configuration Utility - Documentation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #2c3e50;
+            margin-top: 25px;
+        }
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .card h3 {
+            margin-top: 0;
+            color: #3498db;
+        }
+        .card-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 20px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+        .button:hover {
+            background-color: #2980b9;
+            text-decoration: none;
+        }
+        .note {
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .card-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>PageFinder Configuration Utility - Documentation</h1>
+
+    <p>Welcome to the documentation for the PageFinder Configuration Utility. This documentation will help you install, configure, and use the application effectively.</p>
+
+    <div class="note">
+        <p><strong>Note:</strong> The documentation includes references to screenshots that illustrate the application's interface and functionality. Follow the <a href="screenshot-guide.md">Screenshot Guide</a> to add actual screenshots to the documentation.</p>
+    </div>
+
+    <h2>Available Documentation</h2>
+
+    <div class="card-container">
+        <div class="card">
+            <h3>Quick Start Guide</h3>
+            <p>Get up and running quickly with the essential steps to install and use the PageFinder Configuration Utility.</p>
+            <a href="quick-start-guide.html" class="button">Read Quick Start Guide</a>
+        </div>
+
+        <div class="card">
+            <h3>User Manual</h3>
+            <p>Comprehensive guide covering all features and functionality of the PageFinder Configuration Utility.</p>
+            <a href="user-manual.html" class="button">Read User Manual</a>
+        </div>
+
+        <div class="card">
+            <h3>Installation Guide</h3>
+            <p>Detailed instructions for installing the PageFinder Configuration Utility on different platforms.</p>
+            <a href="installation-guide.md" class="button">Read Installation Guide</a>
+        </div>
+
+        <div class="card">
+            <h3>Troubleshooting Guide</h3>
+            <p>Solutions for common issues and problems you might encounter when using the application.</p>
+            <a href="troubleshooting-guide.md" class="button">Read Troubleshooting Guide</a>
+        </div>
+
+        <div class="card">
+            <h3>Technical Reference</h3>
+            <p>In-depth technical information about the application's architecture and implementation.</p>
+            <a href="technical-reference.md" class="button">Read Technical Reference</a>
+        </div>
+
+        <div class="card">
+            <h3>Detailed Specification</h3>
+            <p>Original specification document outlining the application's design and requirements.</p>
+            <a href="detailed-spec.md" class="button">Read Detailed Specification</a>
+        </div>
+
+        <div class="card">
+            <h3>Screenshot Guide</h3>
+            <p>Instructions for creating and adding screenshots to the documentation.</p>
+            <a href="screenshot-guide.md" class="button">Read Screenshot Guide</a>
+        </div>
+    </div>
+
+    <h2>Documentation Overview</h2>
+
+    <h3>For New Users</h3>
+    <p>If you're new to the PageFinder Configuration Utility, we recommend starting with the <a href="quick-start-guide.html">Quick Start Guide</a> to get a basic understanding of the application and its core functionality. Once you're familiar with the basics, you can refer to the <a href="user-manual.html">User Manual</a> for more detailed information.</p>
+
+    <h3>For Administrators</h3>
+    <p>If you're responsible for deploying the application to multiple users, the <a href="installation-guide.md">Installation Guide</a> provides detailed instructions for installing and configuring the application on different platforms.</p>
+
+    <h3>For Developers</h3>
+    <p>If you're a developer looking to understand or extend the application, the <a href="technical-reference.md">Technical Reference</a> provides detailed information about the application's architecture, APIs, and internal workings.</p>
+
+    <h3>For Troubleshooting</h3>
+    <p>If you encounter issues while using the application, the <a href="troubleshooting-guide.md">Troubleshooting Guide</a> provides solutions for common problems and guidance on diagnosing and resolving issues.</p>
+
+    <h2>Screenshots</h2>
+    <p>The documentation includes references to screenshots that illustrate the application's interface and functionality. To add the actual screenshots:</p>
+    <ol>
+        <li>Follow the instructions in the <a href="screenshot-guide.md">Screenshot Guide</a></li>
+        <li>Take screenshots of the application showing the various sections and features</li>
+        <li>Save them as PNG files with the specified names</li>
+        <li>Place them in the <a href="images/">images</a> directory</li>
+    </ol>
+
+    <h2>Getting Help</h2>
+    <p>If you encounter any issues or have questions that aren't addressed in the documentation, please contact support at <a href="mailto:support@pagefinder.com">support@pagefinder.com</a>.</p>
+
+    <footer style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666;">
+        <p>PageFinder Configuration Utility - Documentation</p>
+        <p>Copyright © 2025 PageFinder Team</p>
+    </footer>
+</body>
+</html>

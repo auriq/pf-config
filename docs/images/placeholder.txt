@@ -1,0 +1,18 @@
+This is a placeholder for actual screenshot images.
+
+In a real implementation, this directory would contain PNG image files for each of the screenshots referenced in the documentation. The images would show the actual application interface and would be named according to the conventions in the README.md file in this directory.
+
+For example:
+- main_interface.png
+- cloud_config_section.png
+- pagefinder_config_section.png
+- etc.
+
+These images would be referenced in the documentation using Markdown image syntax:
+
+```markdown
+![Alt Text](images/image_name.png)
+*Caption text describing the image*
+```
+
+When the documentation is viewed in a Markdown renderer or converted to HTML, the images would be displayed inline with the text, making the documentation more visual and easier to understand.
