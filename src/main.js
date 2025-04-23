@@ -19,6 +19,27 @@ if (app.isPackaged) {
   console.log(`Resources path: ${process.resourcesPath}`);
 }
 
+// check config file exists
+const isProduction = app && app.isPackaged;
+let envPath = path.join(process.cwd(), '.env');
+if (isProduction) {
+  // In production, try to find .env in the app's root directory
+  const appPath = app.getAppPath();
+  const possibleEnvPaths = [
+    path.join(process.resourcesPath, '.env'),
+    path.join(process.cwd(), '.env')
+  ];
+
+  for (const possiblePath of possibleEnvPaths) {
+    if (fs.existsSync(possiblePath)) {
+      envPath = possiblePath;
+      break;
+    }
+  }
+}
+
+const isExistsConfigFile = fs.existsSync(envPath);
+
 // Load configuration
 let appConfig = loadConfig();
 
@@ -50,6 +71,12 @@ function createWindow() {
       preload: path.join(__dirname, 'preload', 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false
+    }
+  });
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (!isExistsConfigFile) {
+      saveConfig();
     }
   });
 
