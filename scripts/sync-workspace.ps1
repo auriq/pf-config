@@ -159,6 +159,7 @@ foreach ($remoteName in $remoteNames) {
 
         if (-not $executeMode) {
             $rcloneArgs += "--dry-run"
+            $rcloneArgs += "--quiet"
         }
 
         $rcloneArgs += "--config"
