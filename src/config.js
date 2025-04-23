@@ -37,7 +37,7 @@ require('dotenv').config({ path: envPath });
 const defaultConfig = {
   path_rclone: process.platform === 'win32' ? 'rclone.exe' : '/usr/local/bin/rclone',
   workspace_dir: process.platform === 'win32' ? path.join(os.homedir(), 'AppData', 'Roaming', 'pf-config') : '/tmp/pf-workspace',
-  scripts_path: path.join(process.cwd(), 'scripts')
+  scripts_path: app && app.isPackaged ? path.join(process.resourcesPath, 'scripts') : path.join(process.cwd(), 'scripts')
 };
 
 // Load configuration from environment variables
