@@ -32,16 +32,16 @@ else
     # Set default values
     RCLONE_PATH=${RCLONE_PATH:-"/usr/local/bin/rclone"}
     WORKSPACE_DIR=${WORKSPACE_DIR:-"$HOME/.config/pf-config"}
-    
+
     # If SCRIPTS_PATH is not set, try to set it based on the current script location
     if [ -z "$SCRIPTS_PATH" ]; then
         SCRIPTS_PATH="$SCRIPT_DIR"
         echo "Setting SCRIPTS_PATH to: $SCRIPTS_PATH"
     fi
-    
+
     # Ensure workspace directory exists
     mkdir -p "$WORKSPACE_DIR"
-    
+
     echo "Using default environment variables:"
     echo "RCLONE_PATH=$RCLONE_PATH"
     echo "WORKSPACE_DIR=$WORKSPACE_DIR"
@@ -65,21 +65,21 @@ check_log_size() {
     if [ -f "$LOGFILE" ]; then
         # Get log file size in bytes
         LOG_SIZE=$(stat -f%z "$LOGFILE" 2>/dev/null || stat -c%s "$LOGFILE" 2>/dev/null)
-        
+
         # If log file size is greater than 1MB (1048576 bytes), truncate it
         if [ "$LOG_SIZE" -gt 1048576 ]; then
             log_message "Log file size exceeds 1MB, truncating..."
-            
+
             # Keep approximately the last 500KB of the log file
             # This ensures we keep recent logs while staying well under 1MB
             KEEP_LINES=$(tail -c 512000 "$LOGFILE" | wc -l)
-            
+
             # Create a temporary file with the last KEEP_LINES lines
             tail -n "$KEEP_LINES" "$LOGFILE" > "$WORKDIR/temp_log"
-            
+
             # Replace the original log file with the truncated version
             mv "$WORKDIR/temp_log" "$LOGFILE"
-            
+
             log_message "Log file truncated to last $KEEP_LINES lines"
         fi
     fi
@@ -89,7 +89,7 @@ check_log_size() {
 log_message() {
     # Print to terminal
     echo "[$TIMESTAMP] $1"
-    
+
     # Log to file with absolute path
     if [ ! -f "$LOGFILE" ]; then
         echo "[$TIMESTAMP] $1" > "$LOGFILE"
@@ -100,7 +100,7 @@ log_message() {
         TEMP_FILE="$WORKDIR/temp_sync_log"
         echo "[$TIMESTAMP] $1" | cat - "$LOGFILE" > "$TEMP_FILE" && mv "$TEMP_FILE" "$LOGFILE"
     fi
-    
+
     # Debug: verify log file exists and has content
     if [ ! -f "$LOGFILE" ]; then
         echo "WARNING: Log file does not exist after writing!"
@@ -238,7 +238,7 @@ except Exception as e:
             log_message "Warning: Neither jq nor python is available for proper JSON parsing. Using fallback method."
             SUBFOLDER=$(grep -A 10 "\"$CLOUDNAME\":" "$METADATA_JSON" | grep "\"subfolder\":" | head -1 | sed -E 's/.*"subfolder"[[:space:]]*:[[:space:]]*"([^"]*).*/\1/')
         fi
-        
+
         if [ -n "$SUBFOLDER" ]; then
             log_message "Found subfolder in metadata: $SUBFOLDER for $CLOUDNAME"
             CLOUD_PATH="$CLOUDNAME:$SUBFOLDER"
@@ -250,27 +250,27 @@ except Exception as e:
         log_message "No metadata file found, using root path for $CLOUDNAME"
         CLOUD_PATH="$CLOUDNAME:"
     fi
-    
-    
+
+
     # Construct the destination path
     if [ -z "$PREFIX" ]; then
         PF_PATH="$PFNAME:$BUCKET/$PFNAME/$CLOUDNAME"
     else
         PF_PATH="$PFNAME:$BUCKET/$PREFIX/$PFNAME/$CLOUDNAME"
     fi
-    
+
     log_message "Cloud path: $CLOUD_PATH"
     log_message "PageFinder path: $PF_PATH"
-    
+
     # Construct the rclone command
     if [ "$EXECUTE_MODE" = true ]; then
-        RCLONE_CMD="$RCLONE_PATH sync $CLOUD_PATH $PF_PATH --config $RCLONE_CONF"
+        RCLONE_CMD="$RCLONE_PATH sync $CLOUD_PATH $PF_PATH --config $RCLONE_CONF --s3-no-check-bucket"
     else
-        RCLONE_CMD="$RCLONE_PATH sync $CLOUD_PATH $PF_PATH --dry-run --config $RCLONE_CONF"
+        RCLONE_CMD="$RCLONE_PATH sync $CLOUD_PATH $PF_PATH --dry-run --config $RCLONE_CONF --s3-no-check-bucket"
     fi
-    
+
     log_message "Executing command: $RCLONE_CMD"
-    
+
     # Execute the rclone command and capture output
     RCLONE_OUTPUT=$($RCLONE_CMD 2>&1)
     RCLONE_STATUS=$?
@@ -283,7 +283,7 @@ except Exception as e:
     else
         log_message "Command for $CLOUDNAME produced no output"
     fi
-    
+
     # Log the result
     if [ $RCLONE_STATUS -eq 0 ]; then
         if [ "$EXECUTE_MODE" = true ]; then

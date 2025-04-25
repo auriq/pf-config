@@ -165,6 +165,8 @@ foreach ($remoteName in $remoteNames) {
         $rcloneArgs += "--config"
         $rcloneArgs += $rcloneConfPath
 
+        $rcloneArgs += "--s3-no-check-bucket"
+
         # Execute rclone command
         $rcloneCmd = "$env:RCLONE_PATH $($rcloneArgs -join ' ')"
         Log-Message "Executing command: $rcloneCmd"
