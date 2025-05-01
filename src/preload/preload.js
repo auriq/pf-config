@@ -158,7 +158,7 @@ contextBridge.exposeInMainWorld(
     },
 
     // PageFinder configuration
-    testPageFinderConnection: async () => {
+    testPageFinderConnection: async (isEnableFileList = false) => {
       try {
         // Clean up any lingering rclone processes first
         await ipcRenderer.invoke('cleanup-rclone');
@@ -195,11 +195,16 @@ contextBridge.exposeInMainWorld(
         if (prefix) {
           path += `/${prefix}`;
         }
-        path += `/${pfName}`;
 
         // Test the connection
         const configPath = `${config.workspace_dir}/pf.conf`;
-        const args = ['lsd', path, '--config', configPath];
+        const args = ['lsd', path];
+        if (isEnableFileList) {
+          args.push('--max-depth');
+          args.push('1');
+        }
+        args.push('--config');
+        args.push(configPath);
 
         const result = await ipcRenderer.invoke('execute-rclone', 'lsd', args);
 

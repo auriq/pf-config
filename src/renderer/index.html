@@ -51,7 +51,7 @@
       <!-- Cloud Config Section -->
       <section id="cloud-config" class="content-section active">
         <h2>Cloud Configuration</h2>
-        
+
         <div class="card">
           <h3>Add Cloud Storage</h3>
           <div class="form-row">
@@ -71,7 +71,7 @@
           </div>
           <button id="add-cloud-btn" class="btn btn-primary">Add Cloud Storage</button>
         </div>
-        
+
         <div class="card">
           <h3>Cloud Storage List</h3>
           <div id="cloud-list" class="list-container">
@@ -84,7 +84,7 @@
       <!-- PageFinder Config Section -->
       <section id="pagefinder-config" class="content-section">
         <h2>PageFinder Configuration</h2>
-        
+
         <div class="card">
           <h3>Import Configuration</h3>
           <div class="form-group">
@@ -96,14 +96,21 @@
           </div>
           <button id="import-pf-config" class="btn btn-primary">Import Configuration</button>
         </div>
-        
+
         <div class="card">
           <h3>Test Connection</h3>
           <p>Test the connection to PageFinder using the imported configuration.</p>
-          <button id="test-pf-connection" class="btn btn-primary" disabled>Test Connection</button>
+          <div style="display: flex; align-items: center;">
+            <div>
+              <button id="test-pf-connection" class="btn btn-primary" disabled>Test Connection</button>
+            </div>
+            <div style="margin-left: 20px;">
+              <input type="checkbox" id="test-pf-connection-checkbox" /><label class="checkbox-label" style="margin-right: 8px;">&nbsp;List Files</label>
+            </div>
+          </div>
           <div id="pf-connection-result" class="result-container"></div>
         </div>
-        
+
         <div class="card">
           <h3>Purge Orphan Folders</h3>
           <p>Remove orphaned folders from PageFinder that no longer have corresponding cloud storage.</p>
@@ -118,7 +125,7 @@
       <!-- Sync Section -->
       <section id="sync" class="content-section">
         <h2>Synchronization</h2>
-        
+
         <div class="card">
           <h3>Sync Cloud Storage to PageFinder</h3>
           <p>Synchronize files from configured cloud storage to PageFinder.</p>
@@ -133,7 +140,7 @@
       <!-- Schedule Section -->
       <section id="schedule" class="content-section">
         <h2>Schedule Synchronization</h2>
-        
+
         <div class="card">
           <h3>Set Up Scheduled Sync</h3>
           <div class="form-group">
@@ -143,7 +150,7 @@
           <button id="setup-schedule-btn" class="btn btn-primary">Set Up Schedule</button>
           <div id="schedule-result" class="result-container"></div>
         </div>
-        
+
         <div class="card">
           <div class="card-header-with-action">
             <h3>Last Sync Log</h3>
@@ -160,7 +167,7 @@
       <!-- Settings Section -->
       <section id="settings" class="content-section">
         <h2>Application Settings</h2>
-        
+
         <div class="card">
           <h3>Environment Configuration</h3>
           <div class="form-group">

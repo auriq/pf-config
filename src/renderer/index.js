@@ -20,6 +20,7 @@ const pfConnectionResult = document.getElementById('pf-connection-result');
 const purgeTestBtn = document.getElementById('purge-test-btn');
 const purgeExecBtn = document.getElementById('purge-exec-btn');
 const purgeResult = document.getElementById('purge-result');
+const testPfConnectionCheckbox = document.getElementById('test-pf-connection-checkbox');
 
 // Sync Elements
 const syncTestBtn = document.getElementById('sync-test-btn');
@@ -562,11 +563,14 @@ testPfConnectionBtn.addEventListener('click', async () => {
   testPfConnectionBtn.disabled = true;
   testPfConnectionBtn.textContent = 'Testing...';
 
+  const isEnableFileList = testPfConnectionCheckbox.checked;
+  testPfConnectionCheckbox.disabled = true;
+
   try {
     // Clean up any lingering rclone processes first
     await cleanupRcloneProcesses();
 
-    const result = await window.api.testPageFinderConnection();
+    const result = await window.api.testPageFinderConnection(isEnableFileList);
 
     // Show result
     pfConnectionResult.style.display = 'block';
@@ -593,6 +597,7 @@ testPfConnectionBtn.addEventListener('click', async () => {
     // Reset button state
     testPfConnectionBtn.disabled = false;
     testPfConnectionBtn.textContent = 'Test Connection';
+    testPfConnectionCheckbox.disabled = false;
   }
 });
 
