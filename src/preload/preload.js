@@ -198,7 +198,8 @@ contextBridge.exposeInMainWorld(
         }
 
         // Test the connection
-        const configPath = `${config.workspace_dir}/pf.conf`;
+        const separator = process.platform === 'win32' ? '\\' : '/';
+        const configPath = `${config.workspace_dir}${separator}pf.conf`;
         const args = ['lsd', path];
         if (isEnableFileList) {
           args.push('--max-depth');
