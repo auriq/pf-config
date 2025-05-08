@@ -194,6 +194,7 @@ contextBridge.exposeInMainWorld(
         let path = `${pfName}:${bucket}`;
         if (prefix) {
           path += `/${prefix}`;
+          path += `/${pfName}`;
         }
 
         // Test the connection
