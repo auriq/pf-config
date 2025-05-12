@@ -145,7 +145,7 @@ foreach ($remoteName in $remoteNames) {
 
         # Construct paths
         $cloudPath = "$($remoteName):$subfolder"
-        $pfPath = -join ($pfName + ":" + $pfConfData.bucket + "/" + $pfConfData.prefix + "/" + $remoteName)
+        $pfPath = -join ($pfName + ":" + $pfConfData.bucket + "/" + $pfConfData.prefix + "/" + $pfName + "/" + $remoteName)
 
         Log-Message "Cloud path: $cloudPath"
         Log-Message "PageFinder path: $pfPath"

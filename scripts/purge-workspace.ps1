@@ -124,7 +124,7 @@ $pfName = $pfConfContent.Keys
 $pfConfData = $pfConfContent[$pfName]
 
 # Define PageFinder base path
-$pfBasePath = -join ($pfName + ":" + $pfConfData.bucket + "/" + $pfConfData.prefix + "/" + $remoteName)
+$pfBasePath = -join ($pfName + ":" + $pfConfData.bucket + "/" + $pfConfData.prefix + "/" + $pfName)
 Log-Message "PageFinder base path: $pfBasePath"
 
 # Find folders in destination
