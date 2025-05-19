@@ -150,7 +150,7 @@ try {
     # Parse output to get folder names
     $destFolders = @()
     foreach ($line in $output) {
-        if ($line -match "\s+\d+\s+[\d-]+\s+[\d:]+\s+\d+\s+(.+)") {
+        if ($line -match "\s+\d+\s+[\d-]+\s+[\d:]+\s+-?\d+\s+(.+)") {
             $folderName = $matches[1]
             $destFolders += $folderName
             Log-Message "Found folder: $folderName"
