@@ -139,8 +139,9 @@ foreach ($remoteName in $remoteNames) {
 
     $remote = $remoteMeta.$remoteName
     $subfolder = $remote.subfolder
+    $remoteType = $remote.type
 
-    if ($subfolder) {
+    if (($remoteType -ne "local") -or ($remoteType -eq "local" -and $subfolder)) {
         Log-Message "Found subfolder in metadata: $subfolder for $remoteName"
 
         # Construct paths
